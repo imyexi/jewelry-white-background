@@ -1,0 +1,28 @@
+[
+  {
+    "name": "prompt1",
+    "task_id": "jewelry-white-bg-p1-20260611-140935",
+    "status": "completed",
+    "downloaded_files": [
+      "C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\aireiter-white-bg-two-prompts-20260611-140935\\prompt1_result_1.png"
+    ],
+    "size": [
+      1536,
+      2048
+    ],
+    "bytes": 3671075
+  },
+  {
+    "name": "prompt2",
+    "task_id": "jewelry-white-bg-p2-20260611-140935",
+    "status": "completed",
+    "downloaded_files": [
+      "C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\aireiter-white-bg-two-prompts-20260611-140935\\prompt2_result_1.png"
+    ],
+    "size": [
+      1536,
+      2048
+    ],
+    "bytes": 3484270
+  }
+]
