@@ -1,0 +1,12 @@
+﻿{
+  "statusCode": 200,
+  "message": "",
+  "data": {
+    "task_id": "",
+    "status": "pending",
+    "created_at": "2026-06-12T02:54:37.434Z",
+    "out_task_id": "jewelry-white-bg-JH004-20260612105436",
+    "estimated_credits": 1.8
+  },
+  "ok": true
+}

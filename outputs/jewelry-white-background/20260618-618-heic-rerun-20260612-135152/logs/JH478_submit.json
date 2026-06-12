@@ -1,0 +1,12 @@
+{
+  "statusCode": 200,
+  "message": "",
+  "data": {
+    "task_id": "",
+    "status": "pending",
+    "created_at": "2026-06-12T05:54:10.685Z",
+    "out_task_id": "jewelry-white-bg-heicfix-JH478-20260612135408",
+    "estimated_credits": 1.8
+  },
+  "ok": true
+}

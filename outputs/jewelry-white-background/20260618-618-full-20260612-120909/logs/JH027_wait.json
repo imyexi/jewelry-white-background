@@ -1,0 +1,18 @@
+{
+  "statusCode": 200,
+  "message": "",
+  "data": {
+    "task_id": "order_LZfyZ8vV1I8STYaIiNG_A",
+    "status": "completed",
+    "created_at": "2026-06-12T04:22:47.000Z",
+    "out_task_id": "jewelry-white-bg-JH027-20260612122245",
+    "completed_at": "2026-06-12T04:24:03.000Z",
+    "credits_used": 1.8,
+    "output": [
+      {
+        "url": "https://s1.pxz.ai/upload/image-generator/20260612/fJhD8BSpM0ATl7Jz9_tBS-item-0.png"
+      }
+    ]
+  },
+  "ok": true
+}

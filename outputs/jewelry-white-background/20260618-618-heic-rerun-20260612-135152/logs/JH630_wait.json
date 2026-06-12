@@ -1,0 +1,18 @@
+{
+  "statusCode": 200,
+  "message": "",
+  "data": {
+    "task_id": "order_AvDUZPuJy_CgZ68Jkg7jS",
+    "status": "completed",
+    "created_at": "2026-06-12T06:01:24.000Z",
+    "out_task_id": "jewelry-white-bg-heicfix-JH630-20260612140122",
+    "completed_at": "2026-06-12T06:02:37.000Z",
+    "credits_used": 1.8,
+    "output": [
+      {
+        "url": "https://s1.pxz.ai/upload/image-generator/20260612/P7AIBak7N7a8kzJN45wVB-item-0.png"
+      }
+    ]
+  },
+  "ok": true
+}

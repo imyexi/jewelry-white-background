@@ -1,0 +1,439 @@
+{"ts":"2026-06-12T12:12:53","kind":"start","product_id":"","status":"work=96 batch_size=12"}
+{"ts":"2026-06-12T12:12:53","kind":"batch_start","product_id":"","status":"batch=1 count=12"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH006","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH007","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH010","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH011","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH012","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH013","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH014","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH016","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH020","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH021","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH022","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH023","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"batch_start","product_id":"","status":"batch=2 count=12"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH024","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH025","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH026","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH027","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH028","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH029","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH030","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH475","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH476","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH477","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH478","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH479","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"batch_start","product_id":"","status":"batch=3 count=12"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH480","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH481","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH482","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH483","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH486","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH487","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH488","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH489","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH490","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH491","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH492","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH495","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"batch_start","product_id":"","status":"batch=4 count=12"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH496","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH501","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH502","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH507","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH508","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH510","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH513","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH517","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH518","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH519","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH520","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH521","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"batch_start","product_id":"","status":"batch=5 count=12"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH522","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH523","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH525","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH526","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH533","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH534","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH536","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH537","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH538","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH539","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH545","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH546","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"batch_start","product_id":"","status":"batch=6 count=12"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH547","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH548","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH549","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH563","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH564","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH565","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH566","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH567","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH568","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH600","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH601","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH602","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"batch_start","product_id":"","status":"batch=7 count=12"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH603","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH604","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH607","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH608","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH614","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH617","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH627","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH628","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH629","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH630","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH637","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH638","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"batch_start","product_id":"","status":"batch=8 count=12"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH639","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH640","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH647","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH650","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH920","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH921","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH922","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH923","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH924","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH925","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH926","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"failed_submit","product_id":"JH927","status":"failed_submit","error":"[WinError 2] 系统找不到指定的文件。"}
+{"ts":"2026-06-12T12:12:53","kind":"finished","product_id":"","status":"{\"failed_submit\": 96}"}
+{"ts":"2026-06-12T12:14:53","kind":"start","product_id":"","status":"work=96 batch_size=12"}
+{"ts":"2026-06-12T12:14:53","kind":"batch_start","product_id":"","status":"batch=1 count=12"}
+{"ts":"2026-06-12T12:14:57","kind":"submitted","product_id":"JH006","status":"submitted","task_id":"jewelry-white-bg-JH006-20260612121455"}
+{"ts":"2026-06-12T12:15:02","kind":"submitted","product_id":"JH007","status":"submitted","task_id":"jewelry-white-bg-JH007-20260612121500"}
+{"ts":"2026-06-12T12:15:08","kind":"submitted","product_id":"JH010","status":"submitted","task_id":"jewelry-white-bg-JH010-20260612121506"}
+{"ts":"2026-06-12T12:15:16","kind":"submitted","product_id":"JH011","status":"submitted","task_id":"jewelry-white-bg-JH011-20260612121511"}
+{"ts":"2026-06-12T12:15:23","kind":"submitted","product_id":"JH012","status":"submitted","task_id":"jewelry-white-bg-JH012-20260612121520"}
+{"ts":"2026-06-12T12:15:29","kind":"submitted","product_id":"JH013","status":"submitted","task_id":"jewelry-white-bg-JH013-20260612121527"}
+{"ts":"2026-06-12T12:15:37","kind":"submitted","product_id":"JH014","status":"submitted","task_id":"jewelry-white-bg-JH014-20260612121532"}
+{"ts":"2026-06-12T12:15:45","kind":"submitted","product_id":"JH016","status":"submitted","task_id":"jewelry-white-bg-JH016-20260612121541"}
+{"ts":"2026-06-12T12:15:50","kind":"submitted","product_id":"JH020","status":"submitted","task_id":"jewelry-white-bg-JH020-20260612121548"}
+{"ts":"2026-06-12T12:16:25","kind":"submitted","product_id":"JH021","status":"submitted","task_id":"jewelry-white-bg-JH021-20260612121554"}
+{"ts":"2026-06-12T12:16:28","kind":"prepare_image_fallback_original","product_id":"JH022","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH022_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH022_front.heic"}
+{"ts":"2026-06-12T12:16:32","kind":"submitted","product_id":"JH022","status":"submitted","task_id":"jewelry-white-bg-JH022-20260612121628"}
+{"ts":"2026-06-12T12:16:35","kind":"prepare_image_fallback_original","product_id":"JH023","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH023_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH023_front.heic"}
+{"ts":"2026-06-12T12:16:39","kind":"submitted","product_id":"JH023","status":"submitted","task_id":"jewelry-white-bg-JH023-20260612121635"}
+{"ts":"2026-06-12T12:17:14","kind":"generated","product_id":"JH011","status":"generated","task_id":"jewelry-white-bg-JH011-20260612121511"}
+{"ts":"2026-06-12T12:17:39","kind":"generated","product_id":"JH006","status":"generated","task_id":"jewelry-white-bg-JH006-20260612121455"}
+{"ts":"2026-06-12T12:17:51","kind":"generated","product_id":"JH007","status":"generated","task_id":"jewelry-white-bg-JH007-20260612121500"}
+{"ts":"2026-06-12T12:18:05","kind":"generated","product_id":"JH010","status":"generated","task_id":"jewelry-white-bg-JH010-20260612121506"}
+{"ts":"2026-06-12T12:18:17","kind":"generated","product_id":"JH012","status":"generated","task_id":"jewelry-white-bg-JH012-20260612121520"}
+{"ts":"2026-06-12T12:18:30","kind":"generated","product_id":"JH013","status":"generated","task_id":"jewelry-white-bg-JH013-20260612121527"}
+{"ts":"2026-06-12T12:18:42","kind":"generated","product_id":"JH016","status":"generated","task_id":"jewelry-white-bg-JH016-20260612121541"}
+{"ts":"2026-06-12T12:18:51","kind":"generated","product_id":"JH020","status":"generated","task_id":"jewelry-white-bg-JH020-20260612121548"}
+{"ts":"2026-06-12T12:19:07","kind":"generated","product_id":"JH021","status":"generated","task_id":"jewelry-white-bg-JH021-20260612121554"}
+{"ts":"2026-06-12T12:19:33","kind":"generated","product_id":"JH014","status":"generated","task_id":"jewelry-white-bg-JH014-20260612121532"}
+{"ts":"2026-06-12T12:19:48","kind":"generated","product_id":"JH023","status":"generated","task_id":"jewelry-white-bg-JH023-20260612121635"}
+{"ts":"2026-06-12T12:21:52","kind":"generated","product_id":"JH022","status":"generated","task_id":"jewelry-white-bg-JH022-20260612121628"}
+{"ts":"2026-06-12T12:21:56","kind":"uploaded","product_id":"JH011","status":"uploaded","uploaded_file_token":"Hjxzbyf3boKMpVxg8xEcaVUEn2f"}
+{"ts":"2026-06-12T12:21:59","kind":"uploaded","product_id":"JH006","status":"uploaded","uploaded_file_token":"BD8Gb3es1odj7Gx85B1ccm2jnff"}
+{"ts":"2026-06-12T12:22:02","kind":"uploaded","product_id":"JH007","status":"uploaded","uploaded_file_token":"BEyKbt9Gao0o6wxQcHOc3uIZnbc"}
+{"ts":"2026-06-12T12:22:04","kind":"uploaded","product_id":"JH010","status":"uploaded","uploaded_file_token":"VT9MbCuO5oHjL1xy2WDcUmsgnMg"}
+{"ts":"2026-06-12T12:22:07","kind":"uploaded","product_id":"JH012","status":"uploaded","uploaded_file_token":"O872bOxTKoWStFxJMhZcmbm6nug"}
+{"ts":"2026-06-12T12:22:10","kind":"uploaded","product_id":"JH013","status":"uploaded","uploaded_file_token":"M0mtbqmAmoiM0zxa5c8cQcruntg"}
+{"ts":"2026-06-12T12:22:13","kind":"uploaded","product_id":"JH016","status":"uploaded","uploaded_file_token":"KTUvbWPekoaSzxxJDaYcVHPtnlh"}
+{"ts":"2026-06-12T12:22:15","kind":"uploaded","product_id":"JH020","status":"uploaded","uploaded_file_token":"P6e3bXDtuot4o9xIW99cCAYdnyb"}
+{"ts":"2026-06-12T12:22:18","kind":"uploaded","product_id":"JH021","status":"uploaded","uploaded_file_token":"H9fjbMwYPoEqEmxQr4LcTNAVnkd"}
+{"ts":"2026-06-12T12:22:21","kind":"uploaded","product_id":"JH014","status":"uploaded","uploaded_file_token":"SpqObGJQUowe6excEDncz1kLnhd"}
+{"ts":"2026-06-12T12:22:24","kind":"uploaded","product_id":"JH023","status":"uploaded","uploaded_file_token":"UEkQbvBFVoVdoKxMXsqcQPq0nLf"}
+{"ts":"2026-06-12T12:22:26","kind":"uploaded","product_id":"JH022","status":"uploaded","uploaded_file_token":"GnB4bUQG5oOZkLxWfPJcDJVqnUS"}
+{"ts":"2026-06-12T12:22:26","kind":"batch_start","product_id":"","status":"batch=2 count=12"}
+{"ts":"2026-06-12T12:22:28","kind":"prepare_image_fallback_original","product_id":"JH024","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH024_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH024_front.heic"}
+{"ts":"2026-06-12T12:22:32","kind":"submitted","product_id":"JH024","status":"submitted","task_id":"jewelry-white-bg-JH024-20260612122228"}
+{"ts":"2026-06-12T12:22:37","kind":"submitted","product_id":"JH025","status":"submitted","task_id":"jewelry-white-bg-JH025-20260612122235"}
+{"ts":"2026-06-12T12:22:42","kind":"submitted","product_id":"JH026","status":"submitted","task_id":"jewelry-white-bg-JH026-20260612122239"}
+{"ts":"2026-06-12T12:22:50","kind":"submitted","product_id":"JH027","status":"submitted","task_id":"jewelry-white-bg-JH027-20260612122245"}
+{"ts":"2026-06-12T12:22:54","kind":"submitted","product_id":"JH028","status":"submitted","task_id":"jewelry-white-bg-JH028-20260612122252"}
+{"ts":"2026-06-12T12:22:57","kind":"prepare_image_fallback_original","product_id":"JH029","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH029_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH029_front.heic"}
+{"ts":"2026-06-12T12:23:04","kind":"submitted","product_id":"JH029","status":"submitted","task_id":"jewelry-white-bg-JH029-20260612122257"}
+{"ts":"2026-06-12T12:23:07","kind":"prepare_image_fallback_original","product_id":"JH030","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH030_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH030_front.heic"}
+{"ts":"2026-06-12T12:23:11","kind":"submitted","product_id":"JH030","status":"submitted","task_id":"jewelry-white-bg-JH030-20260612122307"}
+{"ts":"2026-06-12T12:23:16","kind":"submitted","product_id":"JH475","status":"submitted","task_id":"jewelry-white-bg-JH475-20260612122313"}
+{"ts":"2026-06-12T12:23:19","kind":"prepare_image_fallback_original","product_id":"JH476","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH476_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH476_front.heic"}
+{"ts":"2026-06-12T12:23:22","kind":"submitted","product_id":"JH476","status":"submitted","task_id":"jewelry-white-bg-JH476-20260612122319"}
+{"ts":"2026-06-12T12:23:25","kind":"prepare_image_fallback_original","product_id":"JH477","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH477_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH477_front.heic"}
+{"ts":"2026-06-12T12:23:29","kind":"submitted","product_id":"JH477","status":"submitted","task_id":"jewelry-white-bg-JH477-20260612122325"}
+{"ts":"2026-06-12T12:23:32","kind":"prepare_image_fallback_original","product_id":"JH478","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH478_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH478_front.heic"}
+{"ts":"2026-06-12T12:23:36","kind":"submitted","product_id":"JH478","status":"submitted","task_id":"jewelry-white-bg-JH478-20260612122332"}
+{"ts":"2026-06-12T12:23:38","kind":"prepare_image_fallback_original","product_id":"JH479","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH479_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH479_front.heic"}
+{"ts":"2026-06-12T12:23:42","kind":"submitted","product_id":"JH479","status":"submitted","task_id":"jewelry-white-bg-JH479-20260612122338"}
+{"ts":"2026-06-12T12:24:53","kind":"generated","product_id":"JH027","status":"generated","task_id":"jewelry-white-bg-JH027-20260612122245"}
+{"ts":"2026-06-12T12:25:09","kind":"generated","product_id":"JH028","status":"generated","task_id":"jewelry-white-bg-JH028-20260612122252"}
+{"ts":"2026-06-12T12:25:51","kind":"generated","product_id":"JH476","status":"generated","task_id":"jewelry-white-bg-JH476-20260612122319"}
+{"ts":"2026-06-12T12:26:05","kind":"generated","product_id":"JH478","status":"generated","task_id":"jewelry-white-bg-JH478-20260612122332"}
+{"ts":"2026-06-12T12:26:27","kind":"generated","product_id":"JH024","status":"generated","task_id":"jewelry-white-bg-JH024-20260612122228"}
+{"ts":"2026-06-12T12:26:40","kind":"generated","product_id":"JH025","status":"generated","task_id":"jewelry-white-bg-JH025-20260612122235"}
+{"ts":"2026-06-12T12:26:52","kind":"generated","product_id":"JH026","status":"generated","task_id":"jewelry-white-bg-JH026-20260612122239"}
+{"ts":"2026-06-12T12:27:01","kind":"generated","product_id":"JH029","status":"generated","task_id":"jewelry-white-bg-JH029-20260612122257"}
+{"ts":"2026-06-12T12:27:12","kind":"generated","product_id":"JH030","status":"generated","task_id":"jewelry-white-bg-JH030-20260612122307"}
+{"ts":"2026-06-12T12:27:26","kind":"generated","product_id":"JH475","status":"generated","task_id":"jewelry-white-bg-JH475-20260612122313"}
+{"ts":"2026-06-12T12:27:40","kind":"generated","product_id":"JH477","status":"generated","task_id":"jewelry-white-bg-JH477-20260612122325"}
+{"ts":"2026-06-12T12:27:49","kind":"generated","product_id":"JH479","status":"generated","task_id":"jewelry-white-bg-JH479-20260612122338"}
+{"ts":"2026-06-12T12:27:53","kind":"uploaded","product_id":"JH027","status":"uploaded","uploaded_file_token":"MZezbR8aIoyA7sxIqo4cm5XOnGd"}
+{"ts":"2026-06-12T12:27:56","kind":"uploaded","product_id":"JH028","status":"uploaded","uploaded_file_token":"SWAtbYAB2oNNI0xVpxycwHD9nKc"}
+{"ts":"2026-06-12T12:27:59","kind":"uploaded","product_id":"JH476","status":"uploaded","uploaded_file_token":"MdsYbDYZTodYkzx2OcXckk76nqe"}
+{"ts":"2026-06-12T12:28:01","kind":"uploaded","product_id":"JH478","status":"uploaded","uploaded_file_token":"Yu1Hbzpuio78GaxZumfcqQGNnbh"}
+{"ts":"2026-06-12T12:28:04","kind":"uploaded","product_id":"JH024","status":"uploaded","uploaded_file_token":"TRcIbOL0ooRKdSxkgg6cN0FYnMb"}
+{"ts":"2026-06-12T12:28:07","kind":"uploaded","product_id":"JH025","status":"uploaded","uploaded_file_token":"JFEWbVlQBoN1SlxINVRcAanHnXO"}
+{"ts":"2026-06-12T12:28:10","kind":"uploaded","product_id":"JH026","status":"uploaded","uploaded_file_token":"FKcDbDB87ov1dYxVlapciThvn46"}
+{"ts":"2026-06-12T12:28:13","kind":"uploaded","product_id":"JH029","status":"uploaded","uploaded_file_token":"Xco7b4jXgoyPK2x5ay6ceKU9nXd"}
+{"ts":"2026-06-12T12:28:16","kind":"uploaded","product_id":"JH030","status":"uploaded","uploaded_file_token":"SnEQb93E9oEeBSx9Y6bcgdsnnGR"}
+{"ts":"2026-06-12T12:28:20","kind":"uploaded","product_id":"JH475","status":"uploaded","uploaded_file_token":"LNmBbA3tGool8DxGqrOcW4Qfnne"}
+{"ts":"2026-06-12T12:28:23","kind":"uploaded","product_id":"JH477","status":"uploaded","uploaded_file_token":"IsbLbLN0won8q2xMgR5cHXcfngh"}
+{"ts":"2026-06-12T12:28:26","kind":"uploaded","product_id":"JH479","status":"uploaded","uploaded_file_token":"LHDlbLdNTogjkvxQYO2cnrrenPg"}
+{"ts":"2026-06-12T12:28:26","kind":"batch_start","product_id":"","status":"batch=3 count=12"}
+{"ts":"2026-06-12T12:28:27","kind":"prepare_image_fallback_original","product_id":"JH480","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH480_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH480_front.heic"}
+{"ts":"2026-06-12T12:28:32","kind":"submitted","product_id":"JH480","status":"submitted","task_id":"jewelry-white-bg-JH480-20260612122827"}
+{"ts":"2026-06-12T12:28:35","kind":"prepare_image_fallback_original","product_id":"JH481","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH481_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH481_front.heic"}
+{"ts":"2026-06-12T12:28:40","kind":"submitted","product_id":"JH481","status":"submitted","task_id":"jewelry-white-bg-JH481-20260612122835"}
+{"ts":"2026-06-12T12:28:42","kind":"prepare_image_fallback_original","product_id":"JH482","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH482_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH482_front.heic"}
+{"ts":"2026-06-12T12:28:47","kind":"submitted","product_id":"JH482","status":"submitted","task_id":"jewelry-white-bg-JH482-20260612122842"}
+{"ts":"2026-06-12T12:28:49","kind":"prepare_image_fallback_original","product_id":"JH483","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH483_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH483_front.heic"}
+{"ts":"2026-06-12T12:29:15","kind":"submitted","product_id":"JH483","status":"submitted","task_id":"jewelry-white-bg-JH483-20260612122849"}
+{"ts":"2026-06-12T12:29:20","kind":"submitted","product_id":"JH486","status":"submitted","task_id":"jewelry-white-bg-JH486-20260612122917"}
+{"ts":"2026-06-12T12:29:25","kind":"submitted","product_id":"JH487","status":"submitted","task_id":"jewelry-white-bg-JH487-20260612122922"}
+{"ts":"2026-06-12T12:29:33","kind":"submitted","product_id":"JH488","status":"submitted","task_id":"jewelry-white-bg-JH488-20260612122928"}
+{"ts":"2026-06-12T12:29:39","kind":"submitted","product_id":"JH489","status":"submitted","task_id":"jewelry-white-bg-JH489-20260612122936"}
+{"ts":"2026-06-12T12:29:45","kind":"submitted","product_id":"JH490","status":"submitted","task_id":"jewelry-white-bg-JH490-20260612122942"}
+{"ts":"2026-06-12T12:29:53","kind":"submitted","product_id":"JH491","status":"submitted","task_id":"jewelry-white-bg-JH491-20260612122948"}
+{"ts":"2026-06-12T12:29:59","kind":"submitted","product_id":"JH492","status":"submitted","task_id":"jewelry-white-bg-JH492-20260612122956"}
+{"ts":"2026-06-12T12:30:01","kind":"prepare_image_fallback_original","product_id":"JH495","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH495_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH495_front.heic"}
+{"ts":"2026-06-12T12:30:05","kind":"submitted","product_id":"JH495","status":"submitted","task_id":"jewelry-white-bg-JH495-20260612123001"}
+{"ts":"2026-06-12T12:30:46","kind":"generated","product_id":"JH480","status":"generated","task_id":"jewelry-white-bg-JH480-20260612122827"}
+{"ts":"2026-06-12T12:31:00","kind":"generated","product_id":"JH481","status":"generated","task_id":"jewelry-white-bg-JH481-20260612122835"}
+{"ts":"2026-06-12T12:31:14","kind":"generated","product_id":"JH486","status":"generated","task_id":"jewelry-white-bg-JH486-20260612122917"}
+{"ts":"2026-06-12T12:31:25","kind":"generated","product_id":"JH487","status":"generated","task_id":"jewelry-white-bg-JH487-20260612122922"}
+{"ts":"2026-06-12T12:31:35","kind":"generated","product_id":"JH488","status":"generated","task_id":"jewelry-white-bg-JH488-20260612122928"}
+{"ts":"2026-06-12T12:31:45","kind":"generated","product_id":"JH489","status":"generated","task_id":"jewelry-white-bg-JH489-20260612122936"}
+{"ts":"2026-06-12T12:31:54","kind":"generated","product_id":"JH490","status":"generated","task_id":"jewelry-white-bg-JH490-20260612122942"}
+{"ts":"2026-06-12T12:32:06","kind":"generated","product_id":"JH491","status":"generated","task_id":"jewelry-white-bg-JH491-20260612122948"}
+{"ts":"2026-06-12T12:32:18","kind":"generated","product_id":"JH492","status":"generated","task_id":"jewelry-white-bg-JH492-20260612122956"}
+{"ts":"2026-06-12T12:32:26","kind":"generated","product_id":"JH495","status":"generated","task_id":"jewelry-white-bg-JH495-20260612123001"}
+{"ts":"2026-06-12T12:32:48","kind":"generated","product_id":"JH482","status":"generated","task_id":"jewelry-white-bg-JH482-20260612122842"}
+{"ts":"2026-06-12T12:33:53","kind":"generated","product_id":"JH483","status":"generated","task_id":"jewelry-white-bg-JH483-20260612122849"}
+{"ts":"2026-06-12T12:33:57","kind":"uploaded","product_id":"JH480","status":"uploaded","uploaded_file_token":"Kz6fbeYWko9n7ExDvmHcIqain9c"}
+{"ts":"2026-06-12T12:34:00","kind":"uploaded","product_id":"JH481","status":"uploaded","uploaded_file_token":"LPDXb6yXRobgHYxa4UHcbqc1n7d"}
+{"ts":"2026-06-12T12:34:03","kind":"uploaded","product_id":"JH486","status":"uploaded","uploaded_file_token":"OQcibRzLuo9qulxOBcjcIAxpnBg"}
+{"ts":"2026-06-12T12:34:05","kind":"uploaded","product_id":"JH487","status":"uploaded","uploaded_file_token":"U6t3bS1vRo1bzVxevA7cKadnnUh"}
+{"ts":"2026-06-12T12:34:08","kind":"uploaded","product_id":"JH488","status":"uploaded","uploaded_file_token":"VGvmb32Hwo5QVFxDHPccovXAnPb"}
+{"ts":"2026-06-12T12:34:11","kind":"uploaded","product_id":"JH489","status":"uploaded","uploaded_file_token":"DITnbE0zior4GXxylwCcrHfwnng"}
+{"ts":"2026-06-12T12:34:15","kind":"uploaded","product_id":"JH490","status":"uploaded","uploaded_file_token":"P7JUb8R8Co9KxixlNVbc6fkWn2e"}
+{"ts":"2026-06-12T12:34:18","kind":"uploaded","product_id":"JH491","status":"uploaded","uploaded_file_token":"BXMBbhCjWoxBzbxPyzLcJjAYn3f"}
+{"ts":"2026-06-12T12:34:21","kind":"uploaded","product_id":"JH492","status":"uploaded","uploaded_file_token":"WZIYbyHqCouzuVxpMjPckz6znhe"}
+{"ts":"2026-06-12T12:34:24","kind":"uploaded","product_id":"JH495","status":"uploaded","uploaded_file_token":"R5YWbUv74oMe18x68GPceMgAnNb"}
+{"ts":"2026-06-12T12:34:26","kind":"uploaded","product_id":"JH482","status":"uploaded","uploaded_file_token":"EQebbXQokos8Scxx7tucm4q1nib"}
+{"ts":"2026-06-12T12:34:29","kind":"uploaded","product_id":"JH483","status":"uploaded","uploaded_file_token":"OXwrbatJio4dgCxeZLScsOaSnWh"}
+{"ts":"2026-06-12T12:34:29","kind":"batch_start","product_id":"","status":"batch=4 count=12"}
+{"ts":"2026-06-12T12:34:30","kind":"prepare_image_fallback_original","product_id":"JH496","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH496_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH496_front.heic"}
+{"ts":"2026-06-12T12:34:35","kind":"submitted","product_id":"JH496","status":"submitted","task_id":"jewelry-white-bg-JH496-20260612123430"}
+{"ts":"2026-06-12T12:34:37","kind":"prepare_image_fallback_original","product_id":"JH501","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH501_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH501_front.heic"}
+{"ts":"2026-06-12T12:34:42","kind":"submitted","product_id":"JH501","status":"submitted","task_id":"jewelry-white-bg-JH501-20260612123437"}
+{"ts":"2026-06-12T12:34:44","kind":"prepare_image_fallback_original","product_id":"JH502","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH502_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH502_front.heic"}
+{"ts":"2026-06-12T12:34:48","kind":"submitted","product_id":"JH502","status":"submitted","task_id":"jewelry-white-bg-JH502-20260612123444"}
+{"ts":"2026-06-12T12:34:55","kind":"submitted","product_id":"JH507","status":"submitted","task_id":"jewelry-white-bg-JH507-20260612123451"}
+{"ts":"2026-06-12T12:35:01","kind":"submitted","product_id":"JH508","status":"submitted","task_id":"jewelry-white-bg-JH508-20260612123458"}
+{"ts":"2026-06-12T12:35:03","kind":"prepare_image_fallback_original","product_id":"JH510","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH510_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH510_front.heic"}
+{"ts":"2026-06-12T12:35:08","kind":"submitted","product_id":"JH510","status":"submitted","task_id":"jewelry-white-bg-JH510-20260612123503"}
+{"ts":"2026-06-12T12:35:10","kind":"prepare_image_fallback_original","product_id":"JH513","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH513_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH513_front.heic"}
+{"ts":"2026-06-12T12:35:15","kind":"submitted","product_id":"JH513","status":"submitted","task_id":"jewelry-white-bg-JH513-20260612123510"}
+{"ts":"2026-06-12T12:35:21","kind":"submitted","product_id":"JH517","status":"submitted","task_id":"jewelry-white-bg-JH517-20260612123517"}
+{"ts":"2026-06-12T12:35:23","kind":"prepare_image_fallback_original","product_id":"JH518","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH518_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH518_front.heic"}
+{"ts":"2026-06-12T12:35:39","kind":"submitted","product_id":"JH518","status":"submitted","task_id":"jewelry-white-bg-JH518-20260612123523"}
+{"ts":"2026-06-12T12:35:46","kind":"submitted","product_id":"JH519","status":"submitted","task_id":"jewelry-white-bg-JH519-20260612123542"}
+{"ts":"2026-06-12T12:35:54","kind":"submitted","product_id":"JH520","status":"submitted","task_id":"jewelry-white-bg-JH520-20260612123549"}
+{"ts":"2026-06-12T12:36:00","kind":"submitted","product_id":"JH521","status":"submitted","task_id":"jewelry-white-bg-JH521-20260612123557"}
+{"ts":"2026-06-12T12:36:38","kind":"generated","product_id":"JH501","status":"generated","task_id":"jewelry-white-bg-JH501-20260612123437"}
+{"ts":"2026-06-12T12:36:49","kind":"generated","product_id":"JH502","status":"generated","task_id":"jewelry-white-bg-JH502-20260612123444"}
+{"ts":"2026-06-12T12:37:11","kind":"generated","product_id":"JH507","status":"generated","task_id":"jewelry-white-bg-JH507-20260612123451"}
+{"ts":"2026-06-12T12:37:21","kind":"generated","product_id":"JH508","status":"generated","task_id":"jewelry-white-bg-JH508-20260612123458"}
+{"ts":"2026-06-12T12:37:36","kind":"generated","product_id":"JH510","status":"generated","task_id":"jewelry-white-bg-JH510-20260612123503"}
+{"ts":"2026-06-12T12:37:55","kind":"generated","product_id":"JH513","status":"generated","task_id":"jewelry-white-bg-JH513-20260612123510"}
+{"ts":"2026-06-12T12:38:06","kind":"generated","product_id":"JH517","status":"generated","task_id":"jewelry-white-bg-JH517-20260612123517"}
+{"ts":"2026-06-12T12:38:18","kind":"generated","product_id":"JH518","status":"generated","task_id":"jewelry-white-bg-JH518-20260612123523"}
+{"ts":"2026-06-12T12:38:30","kind":"generated","product_id":"JH519","status":"generated","task_id":"jewelry-white-bg-JH519-20260612123542"}
+{"ts":"2026-06-12T12:38:44","kind":"generated","product_id":"JH520","status":"generated","task_id":"jewelry-white-bg-JH520-20260612123549"}
+{"ts":"2026-06-12T12:38:53","kind":"generated","product_id":"JH521","status":"generated","task_id":"jewelry-white-bg-JH521-20260612123557"}
+{"ts":"2026-06-12T12:39:11","kind":"generated","product_id":"JH496","status":"generated","task_id":"jewelry-white-bg-JH496-20260612123430"}
+{"ts":"2026-06-12T12:39:15","kind":"uploaded","product_id":"JH501","status":"uploaded","uploaded_file_token":"Hs7SbEavFop9H3xlj9ScOzgZnpf"}
+{"ts":"2026-06-12T12:39:18","kind":"uploaded","product_id":"JH502","status":"uploaded","uploaded_file_token":"JIY4bpu2UoUAypxKzECcMyp3nzh"}
+{"ts":"2026-06-12T12:39:21","kind":"uploaded","product_id":"JH507","status":"uploaded","uploaded_file_token":"FojObaTxyoqS9mxuYgKccK8LnWd"}
+{"ts":"2026-06-12T12:39:24","kind":"uploaded","product_id":"JH508","status":"uploaded","uploaded_file_token":"L0S4bBwcAolAcexcUbYcEjfHnXb"}
+{"ts":"2026-06-12T12:39:27","kind":"uploaded","product_id":"JH510","status":"uploaded","uploaded_file_token":"NxesbGTwto4KVCxFWVocVFGQnTc"}
+{"ts":"2026-06-12T12:39:30","kind":"uploaded","product_id":"JH513","status":"uploaded","uploaded_file_token":"JNaVbVTT7o5l2sxuLAtc0BoZnYc"}
+{"ts":"2026-06-12T12:39:32","kind":"uploaded","product_id":"JH517","status":"uploaded","uploaded_file_token":"ShCbb5OS2o3AumxfM6kcDyqmncf"}
+{"ts":"2026-06-12T12:39:35","kind":"uploaded","product_id":"JH518","status":"uploaded","uploaded_file_token":"LNNEbHJVuoZXNdxd0OtcsSclndc"}
+{"ts":"2026-06-12T12:39:38","kind":"uploaded","product_id":"JH519","status":"uploaded","uploaded_file_token":"Zt2AbCPDiooJA1x5SF1cEPnqnv4"}
+{"ts":"2026-06-12T12:39:41","kind":"uploaded","product_id":"JH520","status":"uploaded","uploaded_file_token":"NZgmb8YfAoRR3rxtd9fcUXmTnvc"}
+{"ts":"2026-06-12T12:39:43","kind":"uploaded","product_id":"JH521","status":"uploaded","uploaded_file_token":"DcjUb0EoUoD9QqxWNQ8c0a16npc"}
+{"ts":"2026-06-12T12:39:46","kind":"uploaded","product_id":"JH496","status":"uploaded","uploaded_file_token":"SBLUbVk0BoOBRIx4sYpcIoFjnQc"}
+{"ts":"2026-06-12T12:39:46","kind":"batch_start","product_id":"","status":"batch=5 count=12"}
+{"ts":"2026-06-12T12:39:50","kind":"submitted","product_id":"JH522","status":"submitted","task_id":"jewelry-white-bg-JH522-20260612123948"}
+{"ts":"2026-06-12T12:39:55","kind":"submitted","product_id":"JH523","status":"submitted","task_id":"jewelry-white-bg-JH523-20260612123953"}
+{"ts":"2026-06-12T12:40:00","kind":"submitted","product_id":"JH525","status":"submitted","task_id":"jewelry-white-bg-JH525-20260612123958"}
+{"ts":"2026-06-12T12:40:03","kind":"prepare_image_fallback_original","product_id":"JH526","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH526_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH526_front.heic"}
+{"ts":"2026-06-12T12:40:07","kind":"submitted","product_id":"JH526","status":"submitted","task_id":"jewelry-white-bg-JH526-20260612124003"}
+{"ts":"2026-06-12T12:40:14","kind":"submitted","product_id":"JH533","status":"submitted","task_id":"jewelry-white-bg-JH533-20260612124010"}
+{"ts":"2026-06-12T12:40:19","kind":"submitted","product_id":"JH534","status":"submitted","task_id":"jewelry-white-bg-JH534-20260612124016"}
+{"ts":"2026-06-12T12:40:25","kind":"submitted","product_id":"JH536","status":"submitted","task_id":"jewelry-white-bg-JH536-20260612124022"}
+{"ts":"2026-06-12T12:40:31","kind":"submitted","product_id":"JH537","status":"submitted","task_id":"jewelry-white-bg-JH537-20260612124028"}
+{"ts":"2026-06-12T12:40:37","kind":"submitted","product_id":"JH538","status":"submitted","task_id":"jewelry-white-bg-JH538-20260612124034"}
+{"ts":"2026-06-12T12:40:43","kind":"submitted","product_id":"JH539","status":"submitted","task_id":"jewelry-white-bg-JH539-20260612124039"}
+{"ts":"2026-06-12T12:40:48","kind":"submitted","product_id":"JH545","status":"submitted","task_id":"jewelry-white-bg-JH545-20260612124046"}
+{"ts":"2026-06-12T12:40:54","kind":"submitted","product_id":"JH546","status":"submitted","task_id":"jewelry-white-bg-JH546-20260612124051"}
+{"ts":"2026-06-12T12:41:25","kind":"generated","product_id":"JH522","status":"generated","task_id":"jewelry-white-bg-JH522-20260612123948"}
+{"ts":"2026-06-12T12:41:37","kind":"generated","product_id":"JH523","status":"generated","task_id":"jewelry-white-bg-JH523-20260612123953"}
+{"ts":"2026-06-12T12:41:51","kind":"generated","product_id":"JH525","status":"generated","task_id":"jewelry-white-bg-JH525-20260612123958"}
+{"ts":"2026-06-12T12:41:59","kind":"generated","product_id":"JH526","status":"generated","task_id":"jewelry-white-bg-JH526-20260612124003"}
+{"ts":"2026-06-12T12:42:09","kind":"generated","product_id":"JH533","status":"generated","task_id":"jewelry-white-bg-JH533-20260612124010"}
+{"ts":"2026-06-12T12:42:22","kind":"generated","product_id":"JH534","status":"generated","task_id":"jewelry-white-bg-JH534-20260612124016"}
+{"ts":"2026-06-12T12:42:38","kind":"generated","product_id":"JH536","status":"generated","task_id":"jewelry-white-bg-JH536-20260612124022"}
+{"ts":"2026-06-12T12:42:54","kind":"generated","product_id":"JH537","status":"generated","task_id":"jewelry-white-bg-JH537-20260612124028"}
+{"ts":"2026-06-12T12:43:13","kind":"generated","product_id":"JH538","status":"generated","task_id":"jewelry-white-bg-JH538-20260612124034"}
+{"ts":"2026-06-12T12:43:28","kind":"generated","product_id":"JH539","status":"generated","task_id":"jewelry-white-bg-JH539-20260612124039"}
+{"ts":"2026-06-12T12:44:47","kind":"generated","product_id":"JH545","status":"generated","task_id":"jewelry-white-bg-JH545-20260612124046"}
+{"ts":"2026-06-12T12:45:00","kind":"generated","product_id":"JH546","status":"generated","task_id":"jewelry-white-bg-JH546-20260612124051"}
+{"ts":"2026-06-12T12:45:04","kind":"uploaded","product_id":"JH522","status":"uploaded","uploaded_file_token":"Hj7Gb1zvIoTTAFxINHxcwVQgnmg"}
+{"ts":"2026-06-12T12:45:07","kind":"uploaded","product_id":"JH523","status":"uploaded","uploaded_file_token":"MIVEbOic8o48QDxVUeFcIKKRnCd"}
+{"ts":"2026-06-12T12:45:10","kind":"uploaded","product_id":"JH525","status":"uploaded","uploaded_file_token":"Nxb3bxkC0op1mgxPDrVcw47unlf"}
+{"ts":"2026-06-12T12:45:13","kind":"uploaded","product_id":"JH526","status":"uploaded","uploaded_file_token":"WhjYbdLcvog5h2xqL3CcTAX3nTg"}
+{"ts":"2026-06-12T12:45:17","kind":"uploaded","product_id":"JH533","status":"uploaded","uploaded_file_token":"UtVvb20rXoQiuRx3BVGcmFrAnyf"}
+{"ts":"2026-06-12T12:45:20","kind":"uploaded","product_id":"JH534","status":"uploaded","uploaded_file_token":"Xsy6bQ1MzoMh4CxHLDzctNRpnec"}
+{"ts":"2026-06-12T12:45:23","kind":"uploaded","product_id":"JH536","status":"uploaded","uploaded_file_token":"N3L3bWtAeoozgWxUEeOcnkWpn2g"}
+{"ts":"2026-06-12T12:45:26","kind":"uploaded","product_id":"JH537","status":"uploaded","uploaded_file_token":"Dj64bocHWoH5OxxTTDqcOVKPnGh"}
+{"ts":"2026-06-12T12:45:30","kind":"uploaded","product_id":"JH538","status":"uploaded","uploaded_file_token":"HbYbbVYDaok9z6xiUTQcVyHHn3e"}
+{"ts":"2026-06-12T12:45:33","kind":"uploaded","product_id":"JH539","status":"uploaded","uploaded_file_token":"Of5KbfWKjod1LqxcGvxc9PoEnoh"}
+{"ts":"2026-06-12T12:45:36","kind":"uploaded","product_id":"JH545","status":"uploaded","uploaded_file_token":"KCsobdl3hoDVoNxocfxclzJTncf"}
+{"ts":"2026-06-12T12:45:39","kind":"uploaded","product_id":"JH546","status":"uploaded","uploaded_file_token":"EvnGbRPaooJ6gIxxI8GcjnPznuh"}
+{"ts":"2026-06-12T12:45:39","kind":"batch_start","product_id":"","status":"batch=6 count=12"}
+{"ts":"2026-06-12T12:45:43","kind":"submitted","product_id":"JH547","status":"submitted","task_id":"jewelry-white-bg-JH547-20260612124541"}
+{"ts":"2026-06-12T12:45:49","kind":"submitted","product_id":"JH548","status":"submitted","task_id":"jewelry-white-bg-JH548-20260612124546"}
+{"ts":"2026-06-12T12:45:55","kind":"submitted","product_id":"JH549","status":"submitted","task_id":"jewelry-white-bg-JH549-20260612124552"}
+{"ts":"2026-06-12T12:46:00","kind":"submitted","product_id":"JH563","status":"submitted","task_id":"jewelry-white-bg-JH563-20260612124558"}
+{"ts":"2026-06-12T12:46:06","kind":"submitted","product_id":"JH564","status":"submitted","task_id":"jewelry-white-bg-JH564-20260612124603"}
+{"ts":"2026-06-12T12:46:13","kind":"submitted","product_id":"JH565","status":"submitted","task_id":"jewelry-white-bg-JH565-20260612124609"}
+{"ts":"2026-06-12T12:46:18","kind":"submitted","product_id":"JH566","status":"submitted","task_id":"jewelry-white-bg-JH566-20260612124615"}
+{"ts":"2026-06-12T12:46:24","kind":"submitted","product_id":"JH567","status":"submitted","task_id":"jewelry-white-bg-JH567-20260612124621"}
+{"ts":"2026-06-12T12:46:30","kind":"submitted","product_id":"JH568","status":"submitted","task_id":"jewelry-white-bg-JH568-20260612124627"}
+{"ts":"2026-06-12T12:46:36","kind":"submitted","product_id":"JH600","status":"submitted","task_id":"jewelry-white-bg-JH600-20260612124632"}
+{"ts":"2026-06-12T12:46:41","kind":"submitted","product_id":"JH601","status":"submitted","task_id":"jewelry-white-bg-JH601-20260612124639"}
+{"ts":"2026-06-12T12:46:44","kind":"prepare_image_fallback_original","product_id":"JH602","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH602_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH602_front.heic"}
+{"ts":"2026-06-12T12:46:51","kind":"submitted","product_id":"JH602","status":"submitted","task_id":"jewelry-white-bg-JH602-20260612124644"}
+{"ts":"2026-06-12T12:47:07","kind":"generated","product_id":"JH547","status":"generated","task_id":"jewelry-white-bg-JH547-20260612124541"}
+{"ts":"2026-06-12T12:47:17","kind":"generated","product_id":"JH563","status":"generated","task_id":"jewelry-white-bg-JH563-20260612124558"}
+{"ts":"2026-06-12T12:47:46","kind":"generated","product_id":"JH548","status":"generated","task_id":"jewelry-white-bg-JH548-20260612124546"}
+{"ts":"2026-06-12T12:48:05","kind":"generated","product_id":"JH549","status":"generated","task_id":"jewelry-white-bg-JH549-20260612124552"}
+{"ts":"2026-06-12T12:48:16","kind":"generated","product_id":"JH564","status":"generated","task_id":"jewelry-white-bg-JH564-20260612124603"}
+{"ts":"2026-06-12T12:48:28","kind":"generated","product_id":"JH565","status":"generated","task_id":"jewelry-white-bg-JH565-20260612124609"}
+{"ts":"2026-06-12T12:48:42","kind":"generated","product_id":"JH566","status":"generated","task_id":"jewelry-white-bg-JH566-20260612124615"}
+{"ts":"2026-06-12T12:48:52","kind":"generated","product_id":"JH567","status":"generated","task_id":"jewelry-white-bg-JH567-20260612124621"}
+{"ts":"2026-06-12T12:49:01","kind":"generated","product_id":"JH568","status":"generated","task_id":"jewelry-white-bg-JH568-20260612124627"}
+{"ts":"2026-06-12T12:49:14","kind":"generated","product_id":"JH600","status":"generated","task_id":"jewelry-white-bg-JH600-20260612124632"}
+{"ts":"2026-06-12T12:49:22","kind":"generated","product_id":"JH601","status":"generated","task_id":"jewelry-white-bg-JH601-20260612124639"}
+{"ts":"2026-06-12T12:51:59","kind":"generated","product_id":"JH602","status":"generated","task_id":"jewelry-white-bg-JH602-20260612124644"}
+{"ts":"2026-06-12T12:52:05","kind":"uploaded","product_id":"JH547","status":"uploaded","uploaded_file_token":"PA5Vblnqvo18HdxtdqecoCzBnRe"}
+{"ts":"2026-06-12T12:52:08","kind":"uploaded","product_id":"JH563","status":"uploaded","uploaded_file_token":"AsWzbrn3noT7GaxyR6ucqmhZnBh"}
+{"ts":"2026-06-12T12:52:12","kind":"uploaded","product_id":"JH548","status":"uploaded","uploaded_file_token":"RDB6bY6jropn58xA6ygc8ZevnCf"}
+{"ts":"2026-06-12T12:52:15","kind":"uploaded","product_id":"JH549","status":"uploaded","uploaded_file_token":"WjBvbpUXQoKIdVx6UHTchMPunif"}
+{"ts":"2026-06-12T12:52:19","kind":"uploaded","product_id":"JH564","status":"uploaded","uploaded_file_token":"YTrObSxLpozNxbx5htWcyCpDnZd"}
+{"ts":"2026-06-12T12:52:22","kind":"uploaded","product_id":"JH565","status":"uploaded","uploaded_file_token":"FjZmbdwycooutIx5JPAcHWPunoc"}
+{"ts":"2026-06-12T12:52:26","kind":"uploaded","product_id":"JH566","status":"uploaded","uploaded_file_token":"Ay33bB2LzoK7D7xCb32cZ54Rnmd"}
+{"ts":"2026-06-12T12:52:29","kind":"uploaded","product_id":"JH567","status":"uploaded","uploaded_file_token":"HQhVbEhVnohqIMxfz5Wc1vBknnf"}
+{"ts":"2026-06-12T12:52:33","kind":"uploaded","product_id":"JH568","status":"uploaded","uploaded_file_token":"OZqZbTfLDoI3voxvEzRctIgwnwg"}
+{"ts":"2026-06-12T12:52:37","kind":"uploaded","product_id":"JH600","status":"uploaded","uploaded_file_token":"L1QUbh8rWocGUwxTWRNcVIGcnWh"}
+{"ts":"2026-06-12T12:52:40","kind":"uploaded","product_id":"JH601","status":"uploaded","uploaded_file_token":"SZmQbdKiuoFUzwxNTwsczcqunuW"}
+{"ts":"2026-06-12T12:52:44","kind":"uploaded","product_id":"JH602","status":"uploaded","uploaded_file_token":"UwWJbeN8uo9fdSxmI7OcrzNynef"}
+{"ts":"2026-06-12T12:52:44","kind":"batch_start","product_id":"","status":"batch=7 count=12"}
+{"ts":"2026-06-12T12:52:45","kind":"prepare_image_fallback_original","product_id":"JH603","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH603_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH603_front.heic"}
+{"ts":"2026-06-12T12:52:51","kind":"submitted","product_id":"JH603","status":"submitted","task_id":"jewelry-white-bg-JH603-20260612125245"}
+{"ts":"2026-06-12T12:52:54","kind":"prepare_image_fallback_original","product_id":"JH604","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH604_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH604_front.heic"}
+{"ts":"2026-06-12T12:52:58","kind":"submitted","product_id":"JH604","status":"submitted","task_id":"jewelry-white-bg-JH604-20260612125254"}
+{"ts":"2026-06-12T12:53:04","kind":"submitted","product_id":"JH607","status":"submitted","task_id":"jewelry-white-bg-JH607-20260612125301"}
+{"ts":"2026-06-12T12:53:10","kind":"submitted","product_id":"JH608","status":"submitted","task_id":"jewelry-white-bg-JH608-20260612125307"}
+{"ts":"2026-06-12T12:53:13","kind":"prepare_image_fallback_original","product_id":"JH614","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH614_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH614_front.heic"}
+{"ts":"2026-06-12T12:53:17","kind":"submitted","product_id":"JH614","status":"submitted","task_id":"jewelry-white-bg-JH614-20260612125313"}
+{"ts":"2026-06-12T12:53:19","kind":"prepare_image_fallback_original","product_id":"JH617","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH617_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH617_front.heic"}
+{"ts":"2026-06-12T12:53:24","kind":"submitted","product_id":"JH617","status":"submitted","task_id":"jewelry-white-bg-JH617-20260612125319"}
+{"ts":"2026-06-12T12:53:26","kind":"prepare_image_fallback_original","product_id":"JH627","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH627_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH627_front.heic"}
+{"ts":"2026-06-12T12:53:34","kind":"submitted","product_id":"JH627","status":"submitted","task_id":"jewelry-white-bg-JH627-20260612125326"}
+{"ts":"2026-06-12T12:53:37","kind":"prepare_image_fallback_original","product_id":"JH628","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH628_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH628_front.heic"}
+{"ts":"2026-06-12T12:53:41","kind":"submitted","product_id":"JH628","status":"submitted","task_id":"jewelry-white-bg-JH628-20260612125337"}
+{"ts":"2026-06-12T12:53:43","kind":"prepare_image_fallback_original","product_id":"JH629","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH629_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH629_front.heic"}
+{"ts":"2026-06-12T12:53:48","kind":"submitted","product_id":"JH629","status":"submitted","task_id":"jewelry-white-bg-JH629-20260612125343"}
+{"ts":"2026-06-12T12:53:51","kind":"prepare_image_fallback_original","product_id":"JH630","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH630_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH630_front.heic"}
+{"ts":"2026-06-12T12:53:54","kind":"submitted","product_id":"JH630","status":"submitted","task_id":"jewelry-white-bg-JH630-20260612125351"}
+{"ts":"2026-06-12T12:53:57","kind":"prepare_image_fallback_original","product_id":"JH637","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH637_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH637_front.heic"}
+{"ts":"2026-06-12T12:54:01","kind":"submitted","product_id":"JH637","status":"submitted","task_id":"jewelry-white-bg-JH637-20260612125357"}
+{"ts":"2026-06-12T12:54:04","kind":"prepare_image_fallback_original","product_id":"JH638","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH638_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH638_front.heic"}
+{"ts":"2026-06-12T12:54:09","kind":"submitted","product_id":"JH638","status":"submitted","task_id":"jewelry-white-bg-JH638-20260612125404"}
+{"ts":"2026-06-12T12:54:57","kind":"generated","product_id":"JH603","status":"generated","task_id":"jewelry-white-bg-JH603-20260612125245"}
+{"ts":"2026-06-12T12:55:11","kind":"generated","product_id":"JH604","status":"generated","task_id":"jewelry-white-bg-JH604-20260612125254"}
+{"ts":"2026-06-12T12:55:25","kind":"generated","product_id":"JH607","status":"generated","task_id":"jewelry-white-bg-JH607-20260612125301"}
+{"ts":"2026-06-12T12:55:34","kind":"generated","product_id":"JH608","status":"generated","task_id":"jewelry-white-bg-JH608-20260612125307"}
+{"ts":"2026-06-12T12:55:43","kind":"query_warning","product_id":"JH614","status":"query_warning","task_id":"jewelry-white-bg-JH614-20260612125313","error":"IncompleteRead(1470175 bytes read, 2113686 more expected)"}
+{"ts":"2026-06-12T12:56:21","kind":"generated","product_id":"JH617","status":"generated","task_id":"jewelry-white-bg-JH617-20260612125319"}
+{"ts":"2026-06-12T12:56:38","kind":"generated","product_id":"JH627","status":"generated","task_id":"jewelry-white-bg-JH627-20260612125326"}
+{"ts":"2026-06-12T12:56:55","kind":"generated","product_id":"JH628","status":"generated","task_id":"jewelry-white-bg-JH628-20260612125337"}
+{"ts":"2026-06-12T12:57:09","kind":"generated","product_id":"JH629","status":"generated","task_id":"jewelry-white-bg-JH629-20260612125343"}
+{"ts":"2026-06-12T12:57:21","kind":"generated","product_id":"JH630","status":"generated","task_id":"jewelry-white-bg-JH630-20260612125351"}
+{"ts":"2026-06-12T12:57:32","kind":"generated","product_id":"JH637","status":"generated","task_id":"jewelry-white-bg-JH637-20260612125357"}
+{"ts":"2026-06-12T12:57:44","kind":"generated","product_id":"JH638","status":"generated","task_id":"jewelry-white-bg-JH638-20260612125404"}
+{"ts":"2026-06-12T12:58:08","kind":"generated","product_id":"JH614","status":"generated","task_id":"jewelry-white-bg-JH614-20260612125313"}
+{"ts":"2026-06-12T12:58:12","kind":"uploaded","product_id":"JH603","status":"uploaded","uploaded_file_token":"NgTfbQoWqoJXIMx1jVEcbmMGnxc"}
+{"ts":"2026-06-12T12:58:14","kind":"uploaded","product_id":"JH604","status":"uploaded","uploaded_file_token":"IIWWbNDhDonmIsxfaFscfnfAnif"}
+{"ts":"2026-06-12T12:58:17","kind":"uploaded","product_id":"JH607","status":"uploaded","uploaded_file_token":"QtUGbPd56oukKkxfQ07cyLO0nqd"}
+{"ts":"2026-06-12T12:58:20","kind":"uploaded","product_id":"JH608","status":"uploaded","uploaded_file_token":"ZOP1b2VJYoDly7x0GyUcq9VOn1e"}
+{"ts":"2026-06-12T12:58:22","kind":"uploaded","product_id":"JH617","status":"uploaded","uploaded_file_token":"WNhWbZGR5od6sFxwy8Rc15FJnSU"}
+{"ts":"2026-06-12T12:58:25","kind":"uploaded","product_id":"JH627","status":"uploaded","uploaded_file_token":"EkSKbFazGoksJixU0EwcGEOan2g"}
+{"ts":"2026-06-12T12:58:28","kind":"uploaded","product_id":"JH628","status":"uploaded","uploaded_file_token":"PjvQbkTtsoQkroxhMDccgAivn1c"}
+{"ts":"2026-06-12T12:58:31","kind":"uploaded","product_id":"JH629","status":"uploaded","uploaded_file_token":"CDOAbDWoVoDouGxOGPlcs634nOh"}
+{"ts":"2026-06-12T12:58:34","kind":"uploaded","product_id":"JH630","status":"uploaded","uploaded_file_token":"EBSNbx2SXoUp1Vx2FlNc6Bjvnzd"}
+{"ts":"2026-06-12T12:58:36","kind":"uploaded","product_id":"JH637","status":"uploaded","uploaded_file_token":"TIIPbl8TPoXJr8xACuhct2klncf"}
+{"ts":"2026-06-12T12:58:39","kind":"uploaded","product_id":"JH638","status":"uploaded","uploaded_file_token":"J7HRbj7cOor8EQxtaN4ciRsZn2b"}
+{"ts":"2026-06-12T12:58:42","kind":"uploaded","product_id":"JH614","status":"uploaded","uploaded_file_token":"CxClb1VMZolB2Nx1mlgc03eanTc"}
+{"ts":"2026-06-12T12:58:42","kind":"batch_start","product_id":"","status":"batch=8 count=12"}
+{"ts":"2026-06-12T12:58:44","kind":"prepare_image_fallback_original","product_id":"JH639","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH639_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH639_front.heic"}
+{"ts":"2026-06-12T12:58:47","kind":"submitted","product_id":"JH639","status":"submitted","task_id":"jewelry-white-bg-JH639-20260612125844"}
+{"ts":"2026-06-12T12:58:50","kind":"prepare_image_fallback_original","product_id":"JH640","status":"original","error":"cannot identify image file 'C:\\\\Users\\\\Administrator\\\\Documents\\\\珠宝白底图生成\\\\outputs\\\\jewelry-white-background\\\\20260618-618-full-20260612-120909\\\\source\\\\JH640_front.heic'","source_path":"C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-full-20260612-120909\\source\\JH640_front.heic"}
+{"ts":"2026-06-12T12:58:55","kind":"submitted","product_id":"JH640","status":"submitted","task_id":"jewelry-white-bg-JH640-20260612125850"}
+{"ts":"2026-06-12T12:59:00","kind":"submitted","product_id":"JH647","status":"submitted","task_id":"jewelry-white-bg-JH647-20260612125858"}
+{"ts":"2026-06-12T12:59:06","kind":"submitted","product_id":"JH650","status":"submitted","task_id":"jewelry-white-bg-JH650-20260612125903"}
+{"ts":"2026-06-12T12:59:11","kind":"submitted","product_id":"JH920","status":"submitted","task_id":"jewelry-white-bg-JH920-20260612125909"}
+{"ts":"2026-06-12T12:59:17","kind":"submitted","product_id":"JH921","status":"submitted","task_id":"jewelry-white-bg-JH921-20260612125914"}
+{"ts":"2026-06-12T12:59:24","kind":"submitted","product_id":"JH922","status":"submitted","task_id":"jewelry-white-bg-JH922-20260612125920"}
+{"ts":"2026-06-12T12:59:33","kind":"submitted","product_id":"JH923","status":"submitted","task_id":"jewelry-white-bg-JH923-20260612125927"}
+{"ts":"2026-06-12T12:59:38","kind":"submitted","product_id":"JH924","status":"submitted","task_id":"jewelry-white-bg-JH924-20260612125936"}
+{"ts":"2026-06-12T12:59:44","kind":"submitted","product_id":"JH925","status":"submitted","task_id":"jewelry-white-bg-JH925-20260612125941"}
+{"ts":"2026-06-12T12:59:50","kind":"submitted","product_id":"JH926","status":"submitted","task_id":"jewelry-white-bg-JH926-20260612125947"}
+{"ts":"2026-06-12T12:59:55","kind":"submitted","product_id":"JH927","status":"submitted","task_id":"jewelry-white-bg-JH927-20260612125953"}
+{"ts":"2026-06-12T13:00:32","kind":"generated","product_id":"JH647","status":"generated","task_id":"jewelry-white-bg-JH647-20260612125858"}
+{"ts":"2026-06-12T13:00:46","kind":"generated","product_id":"JH650","status":"generated","task_id":"jewelry-white-bg-JH650-20260612125903"}
+{"ts":"2026-06-12T13:01:03","kind":"generated","product_id":"JH920","status":"generated","task_id":"jewelry-white-bg-JH920-20260612125909"}
+{"ts":"2026-06-12T13:01:12","kind":"generated","product_id":"JH921","status":"generated","task_id":"jewelry-white-bg-JH921-20260612125914"}
+{"ts":"2026-06-12T13:01:30","kind":"generated","product_id":"JH922","status":"generated","task_id":"jewelry-white-bg-JH922-20260612125920"}
+{"ts":"2026-06-12T13:01:46","kind":"generated","product_id":"JH923","status":"generated","task_id":"jewelry-white-bg-JH923-20260612125927"}
+{"ts":"2026-06-12T13:02:02","kind":"generated","product_id":"JH924","status":"generated","task_id":"jewelry-white-bg-JH924-20260612125936"}
+{"ts":"2026-06-12T13:02:13","kind":"generated","product_id":"JH925","status":"generated","task_id":"jewelry-white-bg-JH925-20260612125941"}
+{"ts":"2026-06-12T13:02:30","kind":"generated","product_id":"JH926","status":"generated","task_id":"jewelry-white-bg-JH926-20260612125947"}
+{"ts":"2026-06-12T13:02:47","kind":"generated","product_id":"JH927","status":"generated","task_id":"jewelry-white-bg-JH927-20260612125953"}
+{"ts":"2026-06-12T13:03:14","kind":"generated","product_id":"JH639","status":"generated","task_id":"jewelry-white-bg-JH639-20260612125844"}
+{"ts":"2026-06-12T13:04:03","kind":"generated","product_id":"JH640","status":"generated","task_id":"jewelry-white-bg-JH640-20260612125850"}
+{"ts":"2026-06-12T13:04:07","kind":"uploaded","product_id":"JH647","status":"uploaded","uploaded_file_token":"XWobbEmtHooCJFxfY3wcurcPnEc"}
+{"ts":"2026-06-12T13:04:10","kind":"uploaded","product_id":"JH650","status":"uploaded","uploaded_file_token":"NjLdbYEy2o9MNsx1PD6cbJjPndf"}
+{"ts":"2026-06-12T13:04:13","kind":"uploaded","product_id":"JH920","status":"uploaded","uploaded_file_token":"SA34bXgY9o54mtxUX3Lclxhcn7e"}
+{"ts":"2026-06-12T13:04:15","kind":"uploaded","product_id":"JH921","status":"uploaded","uploaded_file_token":"HCILbUtCVo5gm5x9pgfc0WbDnmc"}
+{"ts":"2026-06-12T13:04:19","kind":"uploaded","product_id":"JH922","status":"uploaded","uploaded_file_token":"Rdiwb909LolOz4xNadhcRj3FnFd"}
+{"ts":"2026-06-12T13:04:22","kind":"uploaded","product_id":"JH923","status":"uploaded","uploaded_file_token":"Es8dbbSjIoKCtcxLx0rc1FZ9n33"}
+{"ts":"2026-06-12T13:04:25","kind":"uploaded","product_id":"JH924","status":"uploaded","uploaded_file_token":"U0hEbu0y7ocX2PxaKMycBS7Tnwd"}
+{"ts":"2026-06-12T13:04:27","kind":"uploaded","product_id":"JH925","status":"uploaded","uploaded_file_token":"V8WbbJbSLo2Fz6x1Kt2coZPkn8e"}
+{"ts":"2026-06-12T13:04:30","kind":"uploaded","product_id":"JH926","status":"uploaded","uploaded_file_token":"CROHbNnxWoAdeHx0zvecpg8Unsf"}
+{"ts":"2026-06-12T13:04:33","kind":"uploaded","product_id":"JH927","status":"uploaded","uploaded_file_token":"SQLTbtt1NoaMP0xc1Q6ctJE6n0f"}
+{"ts":"2026-06-12T13:04:36","kind":"uploaded","product_id":"JH639","status":"uploaded","uploaded_file_token":"Kwffbbcwson7mbxoceKc7iOWnWe"}
+{"ts":"2026-06-12T13:04:38","kind":"uploaded","product_id":"JH640","status":"uploaded","uploaded_file_token":"CbRLbJg0co5mNFxBAbQc0uoTnfh"}
+{"ts":"2026-06-12T13:04:38","kind":"finished","product_id":"","status":"{\"uploaded\": 96}"}
