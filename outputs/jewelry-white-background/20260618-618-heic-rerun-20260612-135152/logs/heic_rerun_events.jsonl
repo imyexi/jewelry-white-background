@@ -93,10 +93,22 @@
 {"ts":"2026-06-12T14:03:33","kind":"replaced","product_id":"JH629","status":"replaced","new_uploaded_file_token":"FB4Nb3DplojtOKxV2p4c73QtnIf","old_removed_file_token":"CDOAbDWoVoDouGxOGPlcs634nOh"}
 {"ts":"2026-06-12T14:03:38","kind":"replaced","product_id":"JH630","status":"replaced","new_uploaded_file_token":"UFAAbBt1ZoPdHuxAXOAcgVX7n8g","old_removed_file_token":"EBSNbx2SXoUp1Vx2FlNc6Bjvnzd"}
 {"ts":"2026-06-12T14:03:38","kind":"batch_start","product_id":"","status":"batch=4 count=4"}
-{"ts":"2026-06-12T14:03:41","kind":"submitted","product_id":"JH637","status":"submitted","task_id":"jewelry-white-bg-heicfix-JH637-20260612140338"}
-{"ts":"2026-06-12T14:03:45","kind":"submitted","product_id":"JH638","status":"submitted","task_id":"jewelry-white-bg-heicfix-JH638-20260612140342"}
-{"ts":"2026-06-12T14:03:49","kind":"submitted","product_id":"JH639","status":"submitted","task_id":"jewelry-white-bg-heicfix-JH639-20260612140346"}
-{"ts":"2026-06-12T14:03:53","kind":"submitted","product_id":"JH640","status":"submitted","task_id":"jewelry-white-bg-heicfix-JH640-20260612140350"}
+{"ts":"2026-06-12T14:03:41","kind":"submitted","product_id":"JH637","status":"superseded","superseded_by":"latest submitted event in this log","redacted":true}
+{"ts":"2026-06-12T14:03:45","kind":"submitted","product_id":"JH638","status":"superseded","superseded_by":"latest submitted event in this log","redacted":true}
+{"ts":"2026-06-12T14:03:49","kind":"submitted","product_id":"JH639","status":"superseded","superseded_by":"latest submitted event in this log","redacted":true}
+{"ts":"2026-06-12T14:03:53","kind":"submitted","product_id":"JH640","status":"superseded","superseded_by":"latest submitted event in this log","redacted":true}
 {"ts":"2026-06-12T14:04:29","kind":"start","product_id":"","status":"work=4 batch_size=10"}
 {"ts":"2026-06-12T14:04:29","kind":"batch_start","product_id":"","status":"batch=1 count=4"}
-{"ts":"2026-06-12T14:04:32","kind":"submitted","product_id":"JH637","status":"submitted","task_id":"jewelry-white-bg-heicfix-JH637-20260612140429"}
+{"ts":"2026-06-12T14:04:32","kind":"submitted","product_id":"JH637","status":"submitted","redacted":true}
+{"ts":"2026-06-12T14:04:40","kind":"submitted","product_id":"JH638","status":"submitted","redacted":true}
+{"ts":"2026-06-12T14:04:43","kind":"submitted","product_id":"JH639","status":"submitted","redacted":true}
+{"ts":"2026-06-12T14:04:47","kind":"submitted","product_id":"JH640","status":"submitted","redacted":true}
+{"ts":"2026-06-12T14:06:06","kind":"generated","product_id":"JH637","status":"generated","redacted":true}
+{"ts":"2026-06-12T14:06:16","kind":"generated","product_id":"JH638","status":"generated","redacted":true}
+{"ts":"2026-06-12T14:06:18","kind":"generated","product_id":"JH639","status":"generated","redacted":true}
+{"ts":"2026-06-12T14:06:22","kind":"generated","product_id":"JH640","status":"generated","redacted":true}
+{"ts":"2026-06-12T14:06:28","kind":"replaced","product_id":"JH637","status":"replaced","redacted":true}
+{"ts":"2026-06-12T14:06:33","kind":"replaced","product_id":"JH638","status":"replaced","redacted":true}
+{"ts":"2026-06-12T14:06:38","kind":"replaced","product_id":"JH639","status":"replaced","redacted":true}
+{"ts":"2026-06-12T14:06:43","kind":"replaced","product_id":"JH640","status":"replaced","redacted":true}
+{"ts":"2026-06-12T14:06:43","kind":"finished","product_id":"","status":"{\"replaced\": 34}"}

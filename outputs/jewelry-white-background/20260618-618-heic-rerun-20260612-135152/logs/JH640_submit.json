@@ -1,12 +1,6 @@
 {
-  "statusCode": 200,
-  "message": "",
-  "data": {
-    "task_id": "",
-    "status": "pending",
-    "created_at": "2026-06-12T06:03:51.838Z",
-    "out_task_id": "jewelry-white-bg-heicfix-JH640-20260612140350",
-    "estimated_credits": 1.8
-  },
-  "ok": true
+  "product_id": "JH640",
+  "status": "pending",
+  "redacted": true,
+  "redaction_note": "service submit response details removed"
 }

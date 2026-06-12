@@ -1,0 +1,11 @@
+# Generated service responses and transient local workflow files.
+outputs/**/logs/*_wait.json
+outputs/**/logs/watermark_*.log
+outputs/**/logs/watermark_queue_*.csv
+outputs/**/logs/inspect_*.jpg
+outputs/**/logs/*_payload.json
+outputs/**/logs/*_final.json
+outputs/**/logs/*_task_id.txt
+
+# Keep final watermarked images, but ignore intermediate generated images by default.
+outputs/**/generated/*.png

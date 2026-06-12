@@ -390,31 +390,35 @@
     "replaced_at": "2026-06-12T14:03:38"
   },
   "JH637": {
-    "status": "submitted",
-    "task_id": "jewelry-white-bg-heicfix-JH637-20260612140429",
-    "record_id": "recvm2wQ58xXQA",
-    "prepared_path": "C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-heic-rerun-20260612-135152\\prepared\\JH637_front_1280_q84.jpg",
-    "old_uploaded_file_token": "TIIPbl8TPoXJr8xACuhct2klncf"
+    "status": "replaced",
+    "prepared_path": "<redacted-local-path>",
+    "generated_path": "generated/JH637_generated.png",
+    "final_path": "white-bg/JH637_white_bg_watermarked.png",
+    "replaced_at": "2026-06-12T14:06:28",
+    "redacted": true
   },
   "JH638": {
-    "status": "submitted",
-    "task_id": "jewelry-white-bg-heicfix-JH638-20260612140342",
-    "record_id": "recvm2yFRMFZ1H",
-    "prepared_path": "C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-heic-rerun-20260612-135152\\prepared\\JH638_front_1280_q84.jpg",
-    "old_uploaded_file_token": "J7HRbj7cOor8EQxtaN4ciRsZn2b"
+    "status": "replaced",
+    "prepared_path": "<redacted-local-path>",
+    "generated_path": "generated/JH638_generated.png",
+    "final_path": "white-bg/JH638_white_bg_watermarked.png",
+    "replaced_at": "2026-06-12T14:06:33",
+    "redacted": true
   },
   "JH639": {
-    "status": "submitted",
-    "task_id": "jewelry-white-bg-heicfix-JH639-20260612140346",
-    "record_id": "recvm2yKcB9FDK",
-    "prepared_path": "C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-heic-rerun-20260612-135152\\prepared\\JH639_front_1280_q84.jpg",
-    "old_uploaded_file_token": "Kwffbbcwson7mbxoceKc7iOWnWe"
+    "status": "replaced",
+    "prepared_path": "<redacted-local-path>",
+    "generated_path": "generated/JH639_generated.png",
+    "final_path": "white-bg/JH639_white_bg_watermarked.png",
+    "replaced_at": "2026-06-12T14:06:38",
+    "redacted": true
   },
   "JH640": {
-    "status": "submitted",
-    "task_id": "jewelry-white-bg-heicfix-JH640-20260612140350",
-    "record_id": "recvm2yKcB9DBi",
-    "prepared_path": "C:\\Users\\Administrator\\Documents\\珠宝白底图生成\\outputs\\jewelry-white-background\\20260618-618-heic-rerun-20260612-135152\\prepared\\JH640_front_1280_q84.jpg",
-    "old_uploaded_file_token": "CbRLbJg0co5mNFxBAbQc0uoTnfh"
+    "status": "replaced",
+    "prepared_path": "<redacted-local-path>",
+    "generated_path": "generated/JH640_generated.png",
+    "final_path": "white-bg/JH640_white_bg_watermarked.png",
+    "replaced_at": "2026-06-12T14:06:43",
+    "redacted": true
   }
 }
