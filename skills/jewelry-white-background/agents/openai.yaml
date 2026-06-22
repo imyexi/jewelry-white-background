@@ -1,0 +1,4 @@
+interface:
+  display_name: "珠宝白底图生成"
+  short_description: "预处理 JPG/PNG/HEIC 等参考图，跳过不可处理文件，生成珠宝手串白底图并添加 Yuan Studio 水印。"
+  default_prompt: "请根据产品参考图和货号生成珠宝手串白底图；HEIC 等本地图片先预处理，不可处理格式直接跳过。"
