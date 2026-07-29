@@ -1,110 +1,166 @@
-﻿---
+---
 name: jewelry-white-background
-description: 生成珠宝手串白底电商商品图并添加 Yuan Studio 水印。用于用户提供产品参考图和可选货号，要求预处理 JPG/PNG/WEBP/TIFF/BMP/HEIC/HEIF 参考图、跳过不可处理图片、把同款珠宝手串生成在 #FBFCF9 米白纸质背景上，再添加水印并输出白底图的场景。
+description: 在需要根据珠宝手串正面图和细节图生成白底商品图、添加 Yuan Studio 水印，并要求控制结构漂移、材质失真、构图占比或飞书追加前质检时使用。
 ---
 
 # 珠宝白底图生成
 
-## 概览
+## 核心原则
 
-根据产品参考图生成同一条珠宝手串的竖版 3:4、2K、#FBFCF9 哑光米白纸质白底商品图，然后为结果图添加 Yuan Studio 水印。输入是产品参考图和可选货号；输出是本地白底成品图，若提供货号则水印第二行显示 `PN {货号}`。
+使用 V2 的“参考计划 -> 提示词 -> 双阶段质检 -> 写回门禁”流程。正面图只决定产品结构；细节图只补局部材质；画幅与分辨率只作为 AIReiter 参数；未经水印前后质检和明确授权的图片不得追加到飞书主图。
 
-## 依赖技能
+将 `<SKILL_ROOT>` 替换为本技能目录，`<AIREITER_ROOT>` 替换为 `aireiter-image-generation` 技能目录，`<WATERMARK_ROOT>` 替换为 `yuanyuan-ruyi-watermark` 技能目录。先读取 `references/white-background-prompt.md`，再执行本技能脚本。
 
-必须按顺序使用以下技能，不要重新实现它们的核心逻辑：
+## 输入与产物
 
-1. `aireiter-image-generation`：用 AIReiter `gpt_image_2` 图生图生成白底图。
-2. `yuanyuan-ruyi-watermark`：对生成后的白底图添加底部居中的 Yuan Studio 水印。
+- `front_image`：必填，唯一的整体结构参考。
+- `detail_images`：可选，最多 4 张，仅补局部材质。
+- `product_parameters`：可选，仅供人工整理参考计划；不直接送入模型提示词。
+- `reference_plan.json`：V2 必填事实源，包含结构、特殊件、带 `source_image` 的材质观察、构图阈值和人工复核项。
+- `output_root`：运行目录，至少包含 `source`、`detail`、`preprocessed`、`generated`、`white-bg`、`logs`、`qc`、`manifests`。
 
-本机依赖技能路径：
+每次运行保留 `reference_plan.json`、最终 `prompt.txt`、AIReiter 响应、两份 QC JSON 和 `audit.json`；重跑必须新建运行目录，不覆盖历史记录。
 
-- `<AIReiter skill root>\SKILL.md`
-- `<CODEX_HOME>\skills\yuanyuan-ruyi-watermark\SKILL.md`
+## 参考计划
 
-## 输入
+先由人工根据实物图填写事实，再校验。特殊件只填写可以在正面图中逐项核对的实物；不要用泛化配件词库替代事实。材质观察必须标明 `source_image`，且该路径必须等于正面图或已声明的一张细节图；它只用于追溯材质依据，不会写入模型提示词。材质观察只描述局部可见的底色、通透程度、内含物、纹理走向、密度和明暗关系，不从材料名称推导视觉特效。
 
-- `reference_image`：必填，产品参考图。本地路径优先使用绝对路径；支持 `.jpg`、`.jpeg`、`.png`、`.webp`、`.bmp`、`.tif`、`.tiff`、`.heic`、`.heif`。远程图片 URL 可直接交给 AIReiter，但本地文件必须先预处理。
-- `product_id`：可选，货号。存在时传给水印脚本并渲染为 `PN {product_id}`；不要把货号写进生图画面。
-- `output_root`：可选，默认使用当前工作目录下的 `outputs/jewelry-white-background/<run-id>`。
-
-## 工作流
-
-1. 对本地参考图先运行预处理脚本；若是远程图片 URL，记录为远程输入并跳过本地预处理。
-
-```powershell
-& "<python>" "skills\jewelry-white-background\scripts\preprocess_reference_images.py" `
-  --input "<reference_image>" `
-  --output-dir "outputs/jewelry-white-background/<run-id>/preprocessed"
+```json
+{
+  "schema_version": "2.0",
+  "product_id": "SY1462",
+  "front_image": "source/SY1462_front.jpg",
+  "detail_images": ["detail/SY1462_detail_01.jpg"],
+  "structure": {
+    "bead_sequence": "严格以正面图中可见的珠子数量、颜色顺序和相对位置为准。",
+    "thread": "保留正面图可见的透明串线。",
+    "special_components": [
+      {
+        "name": "合金牛造型珠",
+        "location": "正面图左侧中部",
+        "visual_description": "金色金属造型、雕刻轮廓与中心深色圆形镶嵌以参考图为准。"
+      }
+    ]
+  },
+  "material_observations": [
+    {
+      "subject": "黄塔晶、绿幽灵和闪灵钻珠",
+      "source_image": "detail/SY1462_detail_01.jpg",
+      "description": "分别以参考图中对应珠子的局部可见纹理为准，逐颗保留其底色、通透程度、内含物形态、纹理走向与密度，以及原图可见的明暗关系。"
+    }
+  ],
+  "composition": {
+    "width_ratio_min": 0.45,
+    "width_ratio_max": 0.55,
+    "max_center_offset_ratio": 0.08,
+    "require_full_product": true
+  },
+  "manual_review_items": ["逐颗核对结构与材质", "确认水印不遮挡产品"]
+}
 ```
 
-2. 只允许 `manifest.jsonl` 中 `status` 为 `ok` 的 `preprocessed_path` 进入后续生图。`status` 为 `skipped` 的图片必须直接跳过，并记录 `reason`；不要把不可解码、未知扩展、损坏文件或缺少 HEIC/HEIF 解码能力的图片交给 AIReiter。
-3. 读取 `references/white-background-prompt.md`，完整使用其中的提示词，不要删减关于配件、阴影、曝光、构图和禁止项的约束。
-4. 调用 `aireiter-image-generation` 的 helper 脚本提交图生图任务，`--image` 必须使用预处理后的 JPEG 路径：
+## 执行流程
+
+1. 建立独立运行目录并将正面图、细节图放入相应子目录。使用 `scripts/preprocess_reference_images.py` 预处理所有本地图片，正面图始终排第一。只允许 `manifest.jsonl` 中 `status=ok` 的文件继续。
+2. 校验参考计划和本地图片路径。任何校验失败都先修正计划或图片，不提交生图。
 
 ```powershell
-& "<python>" "<AIReiter skill root>\scripts\aireiter_image_helper.py" submit `
-  --prompt "<white-background-prompt.md 的完整提示词>" `
+& "<python>" "<SKILL_ROOT>\scripts\validate_reference_plan.py" `
+  --reference-plan "<output_root>\reference_plan.json" `
+  --check-files
+```
+
+3. 使用 `scripts/build_white_background_prompt.py` 生成模型专用 prompt。不得手写、改造或替换模型提示词；即使为了纠偏，也只能修改通过校验的 `reference_plan.json` 后重新运行构建脚本。构建结果必须且只能包含七个固定标题：`【任务目标】、【参考图职责】、【产品结构】、【材质细节】、【背景、光线与阴影】、【构图】、【画面范围】`。不要把产品参数、选择理由、任务路径、QC 原文或历史审计拼进 prompt。
+
+```powershell
+& "<python>" "<SKILL_ROOT>\scripts\build_white_background_prompt.py" `
+  --reference-plan "<output_root>\reference_plan.json" `
+  --output "<output_root>\logs\<product_id>_prompt.txt"
+```
+
+4. 调用 `aireiter-image-generation`。画幅和分辨率仅在这一步传参，prompt 文件中不重复。先传正面图，再按重要性传细节图。
+
+```powershell
+$prompt = Get-Content -Raw -Encoding utf8 "<output_root>\logs\<product_id>_prompt.txt"
+& "<python>" "<AIREITER_ROOT>\scripts\aireiter_image_helper.py" submit `
+  --prompt $prompt `
   --aspect-ratio "3:4" `
   --resolution "2K" `
-  --image "<preprocessed_path>"
+  --image "<output_root>\preprocessed\<front>.jpg" `
+  --image "<output_root>\preprocessed\<detail>.jpg"
 ```
 
-5. 记录返回的 `out_task_id`，然后轮询直到完成：
+记录 `out_task_id`、轮询完成、下载原始生成图到 `generated`。AIReiter 失败时遵循 `aireiter-image-generation` 的兜底规则；不要把失败审计原文交给模型。
+
+5. 先检查未加水印图。自动门禁检查宽度占比、居中、裁切风险和前景置信度；结构、逐颗材质和特殊件由人工核验。`fail` 时脚本以退出码 `4` 停止；`review` 时以退出码 `3` 停止，完成可审计的人工复核后才能继续。浅色或透明前景的边缘存在歧义时必须进入 `review`，不能因深色部分正常而自动通过。不要自动裁切、缩放或重排图片。
 
 ```powershell
-& "<python>" "<AIReiter skill root>\scripts\aireiter_image_helper.py" wait `
-  --task-id "<out_task_id>"
+& "<python>" "<SKILL_ROOT>\scripts\evaluate_white_background.py" `
+  --image "<output_root>\generated\<product_id>.png" `
+  --reference-plan "<output_root>\reference_plan.json" `
+  --output "<output_root>\qc\pre_watermark_qc.json"
 ```
 
-6. 从完成结果的 `data.output[].url` 取得图片 URL，下载到本地未加水印目录，例如：
-
-```text
-outputs/jewelry-white-background/<run-id>/generated/<product_id-or-task-id>.png
-```
-
-7. 调用 `yuanyuan-ruyi-watermark` 的水印脚本输出最终白底图：
+6. 仅在水印前 QC 可继续时，调用 `yuanyuan-ruyi-watermark` 生成副本；该脚本不会覆盖原图。
 
 ```powershell
-& "<python>" "<CODEX_HOME>\skills\yuanyuan-ruyi-watermark\scripts\watermark_images.py" `
-  --input "<generated-image-path>" `
-  --output-dir "outputs/jewelry-white-background/<run-id>/white-bg"
+& "<python>" "<WATERMARK_ROOT>\scripts\watermark_images.py" `
+  --input "<output_root>\generated\<product_id>.png" `
+  --output-dir "<output_root>\white-bg" `
+  --product-id "<product_id>"
 ```
 
-若存在货号，追加：
+7. 对加水印图再次检查。忽略底部水印区域，但不改变产品像素；同时写入包含上传决策的审计文件。
 
 ```powershell
---product-id "<product_id>"
+& "<python>" "<SKILL_ROOT>\scripts\evaluate_white_background.py" `
+  --image "<output_root>\white-bg\<product_id>_watermarked.png" `
+  --reference-plan "<output_root>\reference_plan.json" `
+  --stage post-watermark `
+  --ignore-bottom-ratio 0.15 `
+  --output "<output_root>\qc\post_watermark_qc.json" `
+  --pre-watermark-qc "<output_root>\qc\pre_watermark_qc.json" `
+  --prompt-version "v2.2" `
+  --upload-decision "not_authorized" `
+  --audit-output "<output_root>\manifests\audit.json"
 ```
 
-8. 返回最终 `white-bg` 目录中的加水印图片路径；同时保留 `preprocessed` 和 `generated` 目录，便于追踪、质检或重跑。
+## 上传门禁
 
-## 预处理脚本行为
+`audit.json` 必须包含 `prompt_version`、`reference_plan_path`、`pre_watermark_qc`、`post_watermark_qc` 和 `upload_decision`。`upload_decision` 由水印前后 QC、人工复核记录和用户授权记录共同推导；传入的决策值与门禁结果不一致时，脚本拒绝生成审计文件。
 
-- 使用 `scripts/preprocess_reference_images.py` 把可处理的本地参考图统一转成 JPEG，默认最长边 1280px、quality 84，以降低 AIReiter 上传失败率。
-- HEIC/HEIF 通过 `pillow-heif` 解码；若环境缺少解码器或图片无法打开，记录为 `skipped`。
-- 不支持扩展名、文件不存在、损坏图、解码失败的记录全部写入 `manifest.jsonl`，并带有 `reason`。
-- 后续生图循环必须只遍历 `status=ok` 的记录；任何 `skipped` 记录都不允许继续交给 AIReiter、imagegen 或水印技能。
+人工复核记录与用户授权记录必须分别保存为 JSON，字段最小形状如下；它们是申请追加资格的证据，不会自行触发飞书上传。
 
-## 质检规则
+```json
+{
+  "status": "approved",
+  "reviewer": "质检人员姓名或标识",
+  "checked_items": ["结构、材质和水印均已人工复核"]
+}
+```
 
-生成后至少检查以下项目：
+```json
+{
+  "status": "approved",
+  "approved_by": "用户",
+  "approval_reference": "对应的明确追加授权"
+}
+```
 
-- 手串必须是参考图中的同一条真实手串，珠子数量、顺序、圆形轮廓、配件位置和透明串线不能变化。
-- 所有非普通圆珠配件必须保留，包括吊坠、小金属环、隔珠/隔片、装饰帽、雕刻珠、连接环、扣件、金属垫圈、小珠、刻纹件和异形珠。
-- 背景必须是干净的 #FBFCF9 哑光米白纸质表面，只保留手串本体和自然接触阴影，不得出现托盘、布料、手、黑底、文字、logo、边框或额外道具。
-- 光线应为左上 45 度柔和自然光，中低曝光；珠子不能发白、发光或过曝，内部纹理和颜色层次要保留。
-- 构图为竖版 3:4，产品居中，占画面宽度约 50%，不得裁切珠子或配件。
+需要生成“可追加”审计记录时，在水印后 QC 命令中额外传入 `--manual-review-json`、`--append-authorization-json` 和 `--upload-decision "approved_for_append"`；缺少任一证据或任一 QC 未通过时，命令会拒绝该决策。
 
-如果任一关键项失败，优先用同一参考图和同一提示词重跑一次，并在提示词末尾追加一条简短纠偏说明，例如“上一版改变了配件位置，本次必须完全保持参考图中所有配件的原始位置和顺序”。
+- 本地生成、校验和水印不授权飞书写回。
+- 只有水印前后均未失败、人工复核记录为 `approved`，且用户单独明确要求“追加到主图”并写入授权记录后，审计才可能为 `approved_for_append`。
+- 上传使用追加，不替换既有附件；上传后立即回读该记录，确认新文件存在且原附件仍保留。
+- 自动 QC 为 `review` 或 `fail` 时，上传决策分别为 `requires_human_review` 或 `blocked_by_qc`，不得绕过；未授权的本地运行也绝不写回飞书。
 
-## 批量处理
+## 常见判断
 
-批量输入时，先把全部本地参考图交给 `scripts/preprocess_reference_images.py`；可用 `--queue` 读取包含 `image_path`、`product_id`、`output_path` 的 CSV/JSONL。只对 `manifest.jsonl` 中 `status=ok` 的记录生成独立 `out_task_id` 和本地文件名；`status=skipped` 的记录直接写入跳过清单，不进入 AIReiter。每张图完成后再进入水印步骤；如果每张图有不同货号，优先生成水印 CSV/JSONL 队列，交给 `yuanyuan-ruyi-watermark` 批量处理。
-
-## 失败处理
-
-- 预处理失败或格式不可处理时，标记为 `skipped` 并跳过；不要尝试把原图直接丢给 AIReiter 或其他生图技能。
-- HEIC/HEIF 文件必须先通过预处理转成 JPEG；如果当前 Python 环境缺少 `pillow-heif` 或文件无法解码，也标记为 `skipped`。
-- AIReiter 提交或轮询失败时，按 `aireiter-image-generation` 技能的失败兜底规则处理。
-- 下载结果失败时，不要直接宣称完成；先重试下载或返回图片 URL 与下载错误。
-- 水印失败时，返回未加水印图路径、失败命令和错误信息，并提示修复后可只重跑水印步骤。
+| 情况 | 正确处理 |
+| --- | --- |
+| 细节图与正面图冲突 | 正面图决定结构，细节图只补材质。 |
+| 产品占比不在目标区间 | 重生或人工复核，不自动裁图。 |
+| 同一来源连续两次构图超界 | 停止单纯追加提示词；保留 QC 证据，并请求是否启用布局引导参考图或人工确定版式。 |
+| 浅色透明珠前景置信度低 | 标记人工复核，核对边缘、折射和接触阴影。 |
+| 水印前 QC 通过但水印后异常 | 保留原图，修复水印后只重跑水印和交付 QC。 |
+| 需要追加到飞书主图 | 先取得单独授权，再串行上传并读取验证。 |
