@@ -1,0 +1,52 @@
+{
+  "schema_version": "2.0",
+  "product_id": "SY1462",
+  "front_image": "source/SY1462_front.jpg",
+  "detail_images": [
+    "detail/SY1462_detail_01.jpg",
+    "detail/SY1462_detail_02.jpg",
+    "detail/SY1462_detail_03.jpg"
+  ],
+  "product_name": "牛（合金）",
+  "product_parameters": "尺寸 12mm；水晶材质：绿龙晶、黄虎眼、黄塔晶、蓝月光、白水晶、绿幽灵、闪灵钻；配件：无",
+  "structure": {
+    "bead_sequence": "严格以正面图中可见的珠子数量、颜色顺序和相对位置为准。",
+    "thread": "保留正面图可见的透明串线。",
+    "special_components": [
+      {
+        "name": "合金牛造型珠",
+        "location": "正面图左侧中部",
+        "visual_description": "金色金属造型、雕刻轮廓与中心深色圆形镶嵌均以正面图为准。"
+      }
+    ]
+  },
+  "material_observations": [
+    {
+      "subject": "绿龙晶与黄虎眼珠",
+      "source_image": "detail/SY1462_detail_01.jpg",
+      "description": "绿龙晶珠保留参考图中可见的深浅绿色自然纹理与层次；黄虎眼珠保留棕金色定向光带和原图可见的明暗关系。"
+    },
+    {
+      "subject": "黄塔晶、绿幽灵和闪灵钻珠",
+      "source_image": "detail/SY1462_detail_02.jpg",
+      "description": "分别以参考图中对应珠子的局部可见纹理为准，逐颗保留其底色、通透程度、内含物形态、纹理走向与密度，以及原图可见的明暗关系。"
+    },
+    {
+      "subject": "蓝月光和白水晶等浅色透明珠",
+      "source_image": "detail/SY1462_detail_03.jpg",
+      "description": "保留边缘折射、内部层次与自然接触阴影，使其与背景保持可见分离。"
+    }
+  ],
+  "composition": {
+    "width_ratio_min": 0.45,
+    "width_ratio_max": 0.55,
+    "max_center_offset_ratio": 0.08,
+    "require_full_product": true
+  },
+  "manual_review_items": [
+    "逐颗核对珠子数量、颜色顺序与透明串线。",
+    "确认合金牛造型珠的位置、轮廓、中心镶嵌和连接关系。",
+    "确认材质观察对应的局部纹理在成图中仍然可见。",
+    "确认水印清晰、居中且不遮挡产品。"
+  ]
+}
