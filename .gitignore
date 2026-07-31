@@ -1,2 +1,4 @@
 # Generated outputs stay local and are not committed.
 outputs/
+__pycache__/
+*.py[cod]
