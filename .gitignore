@@ -2,3 +2,5 @@
 outputs/
 __pycache__/
 *.py[cod]
+output/
+debug_*.jpg
