@@ -49,7 +49,7 @@ def _require_prompt_text(value: Any, field: str) -> str:
     if re.search(r"[\r\n\u2028\u2029]", text) or "【" in text or "】" in text:
         _fail(field, "不得包含换行或提示词标题符号")
     if RENDERING_PARAMETER_PATTERN.search(text):
-        _fail(field, "画幅和分辨率只能作为 AIReiter 参数传递")
+        _fail(field, "画幅和分辨率只能作为 Yuan v4 图片生成参数传递")
     return text
 
 

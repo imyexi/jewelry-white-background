@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Preprocess jewelry reference images for AIReiter image-to-image generation.
+"""Preprocess jewelry reference images for Yuan v4 reference-guided generation.
 
 Valid local reference images are normalized to JPEG. Unsupported or unreadable
 files are reported as skipped and must not be submitted to downstream generation.

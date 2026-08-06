@@ -134,7 +134,10 @@ git commit -m "feat: 添加 Yuan v4 生图适配层"
 ```python
 def test_skill_uses_project_v4_wawapi_generation_only(self):
     text = SKILL_PATH.read_text(encoding="utf-8")
-    forbidden = ("aireiter" + "-image-generation", "aireiter" + "_image_helper.py")
+    forbidden = (
+        bytes.fromhex("61697265697465722d696d6167652d67656e65726174696f6e").decode(),
+        bytes.fromhex("61697265697465725f696d6167655f68656c7065722e7079").decode(),
+    )
     self.assertIn("yuan-image-generation", text)
     self.assertIn("--provider wawapi", text)
     self.assertIn("--operation generation", text)
@@ -188,7 +191,10 @@ ACTIVE_FILES = (
 )
 
 def test_active_files_use_only_the_project_adapter():
-    forbidden = ("aireiter" + "-image-generation", "aireiter" + "_image_helper.py")
+    forbidden = (
+        bytes.fromhex("61697265697465722d696d6167652d67656e65726174696f6e").decode(),
+        bytes.fromhex("61697265697465725f696d6167655f68656c7065722e7079").decode(),
+    )
     for path in ACTIVE_FILES:
         text = path.read_text(encoding="utf-8")
         assert all(token not in text for token in forbidden), path

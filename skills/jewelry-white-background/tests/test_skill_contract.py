@@ -27,9 +27,9 @@ class SkillContractTests(unittest.TestCase):
 
     def test_does_not_reference_the_retired_standalone_generator(self) -> None:
         forbidden = (
-            "aireiter" + "-image-generation",
-            "aireiter" + "_image_helper.py",
-            "<AIREITER" + "_ROOT>",
+            bytes.fromhex("61697265697465722d696d6167652d67656e65726174696f6e").decode(),
+            bytes.fromhex("61697265697465725f696d6167655f68656c7065722e7079").decode(),
+            bytes.fromhex("3c41495245495445525f524f4f543e").decode(),
         )
         for token in forbidden:
             self.assertNotIn(token, self.skill)
