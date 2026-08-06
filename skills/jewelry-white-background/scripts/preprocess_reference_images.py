@@ -10,7 +10,10 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import shutil
+import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -25,9 +28,12 @@ try:
     import pillow_heif
 
     pillow_heif.register_heif_opener()
-    HEIF_AVAILABLE = True
+    PILLOW_HEIF_AVAILABLE = True
 except Exception:
-    HEIF_AVAILABLE = False
+    PILLOW_HEIF_AVAILABLE = False
+
+HEIF_CONVERTER = shutil.which("heif-convert")
+HEIF_AVAILABLE = PILLOW_HEIF_AVAILABLE or bool(HEIF_CONVERTER)
 
 SUPPORTED_EXTENSIONS = {
     ".jpg",
@@ -139,10 +145,36 @@ def preprocess_one(item: InputItem, output_dir: Path, index: int, max_edge: int,
         return skip_record(item, f"unsupported extension: {ext or '<none>'}", index)
 
     if ext in HEIF_EXTENSIONS and not HEIF_AVAILABLE:
-        return skip_record(item, "HEIC/HEIF decoder unavailable; install pillow-heif", index)
+        return skip_record(item, "HEIC/HEIF decoder unavailable", index)
+
+    temporary_dir: tempfile.TemporaryDirectory[str] | None = None
+    image_source = src
+    heif_decoder: str | None = None
+    if ext in HEIF_EXTENSIONS:
+        if PILLOW_HEIF_AVAILABLE:
+            heif_decoder = "pillow-heif"
+        else:
+            temporary_dir = tempfile.TemporaryDirectory(prefix="jewelry-heif-")
+            image_source = Path(temporary_dir.name) / "converted.jpg"
+            completed = subprocess.run(
+                [str(HEIF_CONVERTER), "--quiet", str(src), str(image_source)],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+            )
+            if completed.returncode != 0 or not image_source.is_file():
+                temporary_dir.cleanup()
+                return skip_record(
+                    item,
+                    f"HEIC/HEIF conversion failed: {(completed.stderr or completed.stdout).strip()}",
+                    index,
+                )
+            heif_decoder = "heif-convert"
 
     try:
-        with Image.open(src) as img:
+        with Image.open(image_source) as img:
             img = ImageOps.exif_transpose(img)
             if img.mode in {"RGBA", "LA"} or (img.mode == "P" and "transparency" in img.info):
                 rgba = img.convert("RGBA")
@@ -170,6 +202,9 @@ def preprocess_one(item: InputItem, output_dir: Path, index: int, max_edge: int,
             img.save(out_path, format="JPEG", quality=quality, optimize=True)
     except (UnidentifiedImageError, OSError, ValueError) as exc:
         return skip_record(item, f"cannot decode image: {exc}", index)
+    finally:
+        if temporary_dir is not None:
+            temporary_dir.cleanup()
 
     return {
         "status": "ok",
@@ -178,7 +213,7 @@ def preprocess_one(item: InputItem, output_dir: Path, index: int, max_edge: int,
         "product_id": item.product_id,
         "index": index,
         "source_extension": ext,
-        "heif_decoder": HEIF_AVAILABLE,
+        "heif_decoder": heif_decoder,
     }
 
 
