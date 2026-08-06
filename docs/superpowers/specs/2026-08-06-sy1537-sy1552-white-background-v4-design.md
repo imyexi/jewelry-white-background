@@ -9,6 +9,7 @@
 - 产品范围固定为 SY1537、SY1538、SY1539、SY1540、SY1541、SY1542、SY1543、SY1544、SY1545、SY1546、SY1547、SY1548、SY1549、SY1550、SY1551、SY1552。
 - 数据来源为标品库 Base：`V1qGbBZlRatF55sNpSyc4hqMnhg`，目标数据表为 `tblwckIFBxoEbN7C`。
 - 产品编号字段为 `fldR6BjwZG`，目标主图附件字段为 `fldEcAYBlX`。
+- 参考图字段为产品正面图 `fldvutIHmd`、产品侧视图 `fldLlMicXn` 和产品图片 `fld2RD0sOP`；实际提交顺序仍以正面图优先规则为准。
 - 用户已明确授权：把通过质检并加水印的成品追加到对应主图字段，保留已有附件。
 - 本轮不使用旧的 `aireiter-image-generation`，也不选择 Yuan Image Generation v4 内的 AIReiter provider。
 
@@ -21,7 +22,7 @@
 该方式满足以下要求：
 
 - 当前项目直接使用 2026 年 8 月 5 日完成验证的 v4 实现。
-- 不复制、不读取、不输出源 Skill 的私密 `references/config.json`。
+- 目录联接不复制私密 `references/config.json`；调用时仅由 Skill helper 按既有凭据规则使用，编排流程不直接读取或输出其内容。
 - 源 Skill 更新后，当前项目能够继续引用同一路径下的最新版实现。
 - 注册前必须确认当前目标路径不存在；若已存在，不覆盖，先核对其类型和来源。
 
