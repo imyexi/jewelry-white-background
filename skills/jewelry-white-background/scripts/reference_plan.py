@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the factual input used to build a V2 jewelry white-background prompt."""
+"""Validate the factual input used by the background-only edit workflow."""
 
 from __future__ import annotations
 
@@ -10,8 +10,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-PROMPT_VERSION = "v2.2"
-DISALLOWED_VISUAL_EFFECT_TERMS = ("闪烁感", "星芒", "亮片", "爆闪", "光晕")
+PROMPT_VERSION = "v3.0"
 GENERIC_COMPONENT_BUCKETS = (
     "所有非普通圆珠",
     "全部非普通圆珠",
@@ -24,8 +23,13 @@ GENERIC_COMPONENT_BUCKETS = (
     "特殊件",
 )
 STRUCTURE_DETAIL_SOURCE_TERMS = ("细节图", "局部图", "详情图", "detail image", "detail_image")
-MATERIAL_CORRECTION_STRUCTURE_TERMS = ("删除", "新增", "重排", "移动", "替换", "顺序", "位置", "数量", "特殊件", "配件", "串线")
 RENDERING_PARAMETER_PATTERN = re.compile(r"(?:3\s*[:：]\s*4|2\s*[KkＫｋ])")
+DEFAULT_COMPOSITION = {
+    "width_ratio_min": 0.45,
+    "width_ratio_max": 0.55,
+    "max_center_offset_ratio": 0.08,
+    "require_full_product": True,
+}
 
 
 class PlanValidationError(ValueError):
@@ -49,7 +53,7 @@ def _require_prompt_text(value: Any, field: str) -> str:
     if re.search(r"[\r\n\u2028\u2029]", text) or "【" in text or "】" in text:
         _fail(field, "不得包含换行或提示词标题符号")
     if RENDERING_PARAMETER_PATTERN.search(text):
-        _fail(field, "画幅和分辨率只能作为 Yuan v4 图片生成参数传递")
+        _fail(field, "画幅和分辨率不得进入背景编辑参考计划")
     return text
 
 
@@ -97,47 +101,6 @@ def _validate_component(component: Any, index: int) -> dict[str, str]:
     }
 
 
-def _validate_observation(observation: Any, index: int, allowed_sources: set[str]) -> dict[str, str]:
-    field = f"material_observations[{index}]"
-    if not isinstance(observation, Mapping):
-        _fail(field, "必须是对象")
-
-    source_image = _require_text(observation.get("source_image"), f"{field}.source_image")
-    if source_image not in allowed_sources:
-        _fail(f"{field}.source_image", "必须指向正面图或已声明的细节图")
-    description = _require_prompt_text(observation.get("description"), f"{field}.description")
-    if any(term in description for term in DISALLOWED_VISUAL_EFFECT_TERMS):
-        _fail(f"{field}.description", "不得包含未从参考图核实的视觉特效词")
-
-    return {
-        "subject": _require_prompt_text(observation.get("subject"), f"{field}.subject"),
-        "source_image": source_image,
-        "description": description,
-    }
-
-
-def _validate_corrections(value: Any) -> dict[str, list[str]]:
-    if value is None:
-        return {"structure": [], "material": []}
-    if not isinstance(value, Mapping):
-        _fail("corrections", "必须是对象")
-
-    result: dict[str, list[str]] = {}
-    for key in ("structure", "material"):
-        entries = value.get(key, [])
-        if not isinstance(entries, list) or len(entries) > 3:
-            _fail(f"corrections.{key}", "必须是最多 3 条的文本数组")
-        result[key] = []
-        for index, entry in enumerate(entries):
-            text = _require_prompt_text(entry, f"corrections.{key}[{index}]")
-            if any(term in text for term in DISALLOWED_VISUAL_EFFECT_TERMS):
-                _fail(f"corrections.{key}[{index}]", "不得包含未从参考图核实的视觉特效词")
-            if key == "material" and any(term in text for term in MATERIAL_CORRECTION_STRUCTURE_TERMS):
-                _fail(f"corrections.{key}[{index}]", "材质纠偏不得新增、删除或重排产品结构")
-            result[key].append(text)
-    return result
-
-
 def load_plan(path: str | Path) -> dict[str, Any]:
     plan_path = Path(path)
     try:
@@ -160,8 +123,13 @@ def validate_plan(plan: Mapping[str, Any], base_dir: str | Path | None = None) -
     base_path = Path(base_dir) if base_dir is not None else None
     data = copy.deepcopy(dict(plan))
 
-    if data.get("schema_version") != "2.0":
-        _fail("schema_version", "必须为 2.0")
+    if data.get("schema_version") != "3.0":
+        _fail("schema_version", "必须为 3.0")
+    if data.get("workflow_mode") != "background_only_edit":
+        _fail("workflow_mode", "必须为 background_only_edit")
+    for forbidden_field in ("product_name", "product_parameters"):
+        if forbidden_field in data:
+            _fail(forbidden_field, "不得进入 reference plan；请保存在旁路 product_context.json")
 
     product_id = _require_text(data.get("product_id"), "product_id")
     if not re.fullmatch(r"[A-Za-z0-9_-]+", product_id):
@@ -179,59 +147,56 @@ def validate_plan(plan: Mapping[str, Any], base_dir: str | Path | None = None) -
     structure = data.get("structure")
     if not isinstance(structure, Mapping):
         _fail("structure", "必须是对象")
-    components = structure.get("special_components", [])
-    if not isinstance(components, list):
-        _fail("structure.special_components", "必须是数组")
-    normalized_structure = {
-        "bead_sequence": _require_structure_text(structure.get("bead_sequence"), "structure.bead_sequence"),
-        "thread": _require_structure_text(structure.get("thread"), "structure.thread"),
-        "special_components": [_validate_component(component, index) for index, component in enumerate(components)],
+    source_image = _validate_image_path(structure.get("source_image"), "structure.source_image", base_path)
+    if source_image != front_image:
+        _fail("structure.source_image", "必须与 front_image 完全相同")
+    normalized_structure: dict[str, Any] = {
+        "source_image": source_image,
+        "bead_sequence": "",
+        "thread": "",
+        "special_components": [],
     }
-
-    observations = data.get("material_observations")
-    if not isinstance(observations, list) or not observations:
-        _fail("material_observations", "必须至少包含一条基于参考图的材质观察")
-    allowed_observation_sources = {front_image, *normalized_details}
-    normalized_observations = [
-        _validate_observation(observation, index, allowed_observation_sources)
-        for index, observation in enumerate(observations)
-    ]
+    for field in ("bead_sequence", "thread"):
+        if field in structure:
+            normalized_structure[field] = _require_structure_text(structure[field], f"structure.{field}")
+    if "special_components" in structure:
+        components = structure["special_components"]
+        if not isinstance(components, list):
+            _fail("structure.special_components", "必须是数组")
+        normalized_structure["special_components"] = [
+            _validate_component(component, index) for index, component in enumerate(components)
+        ]
 
     composition = data.get("composition")
-    if not isinstance(composition, Mapping):
-        _fail("composition", "必须是对象")
-    width_min = _require_number(composition.get("width_ratio_min"), "composition.width_ratio_min")
-    width_max = _require_number(composition.get("width_ratio_max"), "composition.width_ratio_max")
-    center_offset = _require_number(composition.get("max_center_offset_ratio"), "composition.max_center_offset_ratio")
-    if width_min < 0.45 or width_min > 0.55:
-        _fail("composition.width_ratio_min", "必须位于 0.45 到 0.55 之间")
-    if width_max < 0.45 or width_max > 0.55 or width_min >= width_max:
-        _fail("composition.width_ratio_max", "必须大于最小值且位于 0.45 到 0.55 之间")
-    if center_offset <= 0 or center_offset > 0.10:
-        _fail("composition.max_center_offset_ratio", "必须大于 0 且不超过 0.10")
-    if composition.get("require_full_product") is not True:
-        _fail("composition.require_full_product", "必须为 true")
-
-    review_items = data.get("manual_review_items")
-    if not isinstance(review_items, list) or not review_items:
-        _fail("manual_review_items", "必须至少包含一条人工复核项")
-    normalized_review_items = [_require_text(item, f"manual_review_items[{index}]") for index, item in enumerate(review_items)]
-
-    return {
-        "schema_version": "2.0",
-        "product_id": product_id,
-        "front_image": front_image,
-        "detail_images": normalized_details,
-        "product_name": str(data.get("product_name") or "").strip(),
-        "product_parameters": str(data.get("product_parameters") or "").strip(),
-        "structure": normalized_structure,
-        "material_observations": normalized_observations,
-        "composition": {
+    if composition is None:
+        normalized_composition = dict(DEFAULT_COMPOSITION)
+    else:
+        if not isinstance(composition, Mapping):
+            _fail("composition", "必须是对象")
+        width_min = _require_number(composition.get("width_ratio_min"), "composition.width_ratio_min")
+        width_max = _require_number(composition.get("width_ratio_max"), "composition.width_ratio_max")
+        center_offset = _require_number(composition.get("max_center_offset_ratio"), "composition.max_center_offset_ratio")
+        if width_min < 0.45 or width_min > 0.55:
+            _fail("composition.width_ratio_min", "必须位于 0.45 到 0.55 之间")
+        if width_max < 0.45 or width_max > 0.55 or width_min >= width_max:
+            _fail("composition.width_ratio_max", "必须大于最小值且位于 0.45 到 0.55 之间")
+        if center_offset <= 0 or center_offset > 0.10:
+            _fail("composition.max_center_offset_ratio", "必须大于 0 且不超过 0.10")
+        if composition.get("require_full_product") is not True:
+            _fail("composition.require_full_product", "必须为 true")
+        normalized_composition = {
             "width_ratio_min": width_min,
             "width_ratio_max": width_max,
             "max_center_offset_ratio": center_offset,
             "require_full_product": True,
-        },
-        "manual_review_items": normalized_review_items,
-        "corrections": _validate_corrections(data.get("corrections")),
+        }
+
+    return {
+        "schema_version": "3.0",
+        "workflow_mode": "background_only_edit",
+        "product_id": product_id,
+        "front_image": front_image,
+        "detail_images": normalized_details,
+        "structure": normalized_structure,
+        "composition": normalized_composition,
     }

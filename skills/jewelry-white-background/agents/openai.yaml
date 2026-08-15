@@ -1,4 +1,4 @@
 interface:
   display_name: "珠宝白底图生成"
-  short_description: "使用 Yuan v4 生成珠宝白底图，执行双阶段质检与主图追加门禁。"
-  default_prompt: "请使用 $jewelry-white-background 根据珠宝正面图和细节图创建参考计划，通过 Yuan Image Generation v4 的 Wawapi Generation 生成白底图，并完成水印前后质检。"
+  short_description: "以飞书最新首张正面图、逐图云端视觉几何和本地 Mask 执行受保护的背景 Edit。"
+  default_prompt: "请使用 $jewelry-white-background 处理飞书最新首张正面图：逐图取得云端视觉几何，调用技能内固定检测工具辅助生成 Mask，以未经增强的原图完成 Mask Edit，保留第一张有效本地结果并添加 Yuan Studio 水印；仅在取得用户授权后追加到主图字段。"

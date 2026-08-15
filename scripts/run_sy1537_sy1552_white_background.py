@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -18,7 +19,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from scripts.yuan_image_generation_adapter import generate_to_path
+from scripts.create_background_edit_mask import (
+    create_background_edit_assets,
+    load_vision_geometry,
+)
+from scripts.yuan_image_generation_adapter import edit_background_to_path
 
 
 TARGET_PRODUCT_IDS = tuple(f"SY{number}" for number in range(1537, 1553))
@@ -44,7 +49,6 @@ DEFAULT_RUN_ROOT = (
     / "base-sy1537-sy1552-20260806"
 )
 SKILL_ROOT = PROJECT_ROOT / "skills" / "jewelry-white-background"
-PREPROCESS_SCRIPT = SKILL_ROOT / "scripts" / "preprocess_reference_images.py"
 VALIDATE_PLAN_SCRIPT = SKILL_ROOT / "scripts" / "validate_reference_plan.py"
 BUILD_PROMPT_SCRIPT = SKILL_ROOT / "scripts" / "build_white_background_prompt.py"
 EVALUATE_SCRIPT = SKILL_ROOT / "scripts" / "evaluate_white_background.py"
@@ -57,10 +61,7 @@ WATERMARK_SCRIPT = (
     / "watermark_images.py"
 )
 LARK_CLI = Path.home() / "AppData" / "Roaming" / "npm" / "lark-cli.ps1"
-PROMPT_VERSION = "v2.3-yuan-v4"
-AUTHORIZATION_REFERENCE = (
-    "用户于 2026-08-06 明确要求将合格水印白底图追加到对应主图并执行。"
-)
+PROMPT_VERSION = "v3.0-background-only-edit"
 IMAGE_SUFFIXES = {
     ".jpg",
     ".jpeg",
@@ -300,17 +301,7 @@ def select_reference_attachments(record: ProductRecord) -> list[Attachment]:
     )
     if front is None:
         return []
-    ordered = [front, *record.product_images, *record.side_images]
-    selected: list[Attachment] = []
-    seen: set[str] = set()
-    for item in ordered:
-        if item.token in seen or not _is_image_attachment(item):
-            continue
-        selected.append(item)
-        seen.add(item.token)
-        if len(selected) == 5:
-            break
-    return selected
+    return [front]
 
 
 def plan_upload(
@@ -324,12 +315,52 @@ def plan_upload(
     return UploadPlan(action="upload")
 
 
-def verify_append(
-    before: Sequence[Attachment], after: Sequence[Attachment], new_token: str
-) -> bool:
-    before_tokens = {item.token for item in before}
-    after_tokens = [item.token for item in after]
-    return before_tokens.issubset(set(after_tokens)) and after_tokens.count(new_token) == 1
+def _normalized_append_version(append_version: str) -> str:
+    version = append_version.strip()
+    if not version:
+        return ""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", version):
+        raise ValueError("追加版本标识只能包含字母、数字、下划线和连字符")
+    return version
+
+
+def _normalized_authorization_reference(value: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("交付必须显式提供非空授权引用")
+    return value.strip()
+
+
+def watermarked_filename(product_id: str, append_version: str = "") -> str:
+    version = _normalized_append_version(append_version)
+    if version:
+        return f"{product_id}_{version}_watermarked.png"
+    return f"{product_id}_watermarked.png"
+
+
+def build_watermark_command(
+    *,
+    generated_path: Path,
+    output_dir: Path,
+    product_id: str,
+    append_version: str = "",
+) -> tuple[list[str], Path]:
+    version = _normalized_append_version(append_version)
+    output_path = output_dir / watermarked_filename(product_id, version)
+    command = [
+        sys.executable,
+        str(WATERMARK_SCRIPT),
+        "--input",
+        str(generated_path),
+        "--output-dir",
+        str(output_dir),
+        "--product-id",
+        product_id,
+        "--workers",
+        "1",
+    ]
+    if version:
+        command.extend(["--suffix", f"_{version}_watermarked"])
+    return command, output_path
 
 
 def workspace_relative_output(path: Path) -> str:
@@ -395,53 +426,6 @@ def _download_attachment(
     )
 
 
-def _run_preprocess(
-    product_id: str,
-    product_root: Path,
-    source_paths: Sequence[Path],
-) -> tuple[Path, ...]:
-    queue_path = product_root / "manifests" / "preprocess_queue.jsonl"
-    rows: list[dict[str, str]] = []
-    for index, source_path in enumerate(source_paths, start=1):
-        role = "front" if index == 1 else "detail"
-        output_path = product_root / "preprocessed" / f"{index:02d}_{role}.jpg"
-        rows.append(
-            {
-                "image_path": str(source_path),
-                "product_id": f"{product_id}_{index:02d}_{role}",
-                "output_path": str(output_path),
-            }
-        )
-    queue_path.parent.mkdir(parents=True, exist_ok=True)
-    queue_path.write_text(
-        "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
-        encoding="utf-8",
-    )
-    completed = run_command(
-        [
-            sys.executable,
-            str(PREPROCESS_SCRIPT),
-            "--queue",
-            str(queue_path),
-            "--output-dir",
-            str(product_root / "preprocessed"),
-            "--strict",
-        ]
-    )
-    payload = _parse_json_output(completed)
-    records = payload.get("records")
-    if not isinstance(records, list) or len(records) != len(source_paths):
-        raise RuntimeError(f"{product_id} 预处理结果数量不一致")
-    ready = tuple(
-        Path(str(item["preprocessed_path"]))
-        for item in sorted(records, key=lambda item: int(item.get("index") or 0))
-        if item.get("status") == "ok"
-    )
-    if len(ready) != len(source_paths):
-        raise RuntimeError(f"{product_id} 存在无法使用的参考图")
-    return ready
-
-
 def _create_contact_sheet(
     images: Sequence[tuple[Path, str]],
     output_path: Path,
@@ -473,28 +457,14 @@ def _draft_reference_plan(
 ) -> dict[str, Any]:
     relative = [str(path.relative_to(product_root)).replace("\\", "/") for path in references]
     return {
-        "schema_version": "2.0",
+        "schema_version": "3.0",
+        "workflow_mode": "background_only_edit",
         "product_id": product_id,
         "front_image": relative[0],
-        "detail_images": relative[1:],
+        "detail_images": [],
         "structure": {
-            "bead_sequence": "",
-            "thread": "",
-            "special_components": [],
+            "source_image": relative[0],
         },
-        "material_observations": [],
-        "composition": {
-            "width_ratio_min": 0.45,
-            "width_ratio_max": 0.55,
-            "max_center_offset_ratio": 0.08,
-            "require_full_product": True,
-        },
-        "manual_review_items": [
-            "逐颗核对结构与材质",
-            "确认特殊件和串线与正面图一致",
-            "确认水印不遮挡产品",
-        ],
-        "preparation_status": "needs_manual_observation",
     }
 
 
@@ -506,7 +476,6 @@ def prepare_product(record: ProductRecord, run_root: Path) -> PreparedProduct:
     for name in (
         "source",
         "detail",
-        "preprocessed",
         "generated",
         "white-bg",
         "logs",
@@ -532,9 +501,7 @@ def prepare_product(record: ProductRecord, run_root: Path) -> PreparedProduct:
             }
         )
 
-    references = _run_preprocess(record.product_id, product_root, source_paths)
-    for item, reference in zip(selected_context, references):
-        item["preprocessed_path"] = str(reference.relative_to(product_root)).replace("\\", "/")
+    references = tuple(source_paths)
 
     context = {
         "product_id": record.product_id,
@@ -550,13 +517,6 @@ def prepare_product(record: ProductRecord, run_root: Path) -> PreparedProduct:
             draft_path,
             _draft_reference_plan(record.product_id, product_root, references),
         )
-    _create_contact_sheet(
-        [
-            (path, f"{index:02d} {'FRONT' if index == 1 else 'DETAIL'}")
-            for index, path in enumerate(references, start=1)
-        ],
-        product_root / "reference_contact_sheet.jpg",
-    )
     return PreparedProduct(record.product_id, product_root, tuple(references))
 
 
@@ -621,18 +581,41 @@ def _validate_product_ids(product_ids: Sequence[str] | None) -> tuple[str, ...]:
 
 def _reference_paths(plan_path: Path) -> tuple[Path, ...]:
     plan = read_json(plan_path)
-    values = [plan.get("front_image"), *(plan.get("detail_images") or [])]
-    paths: list[Path] = []
-    for value in values:
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError(f"参考计划图片路径无效：{plan_path}")
-        path = Path(value)
-        if not path.is_absolute():
-            path = plan_path.parent / path
-        paths.append(path)
-    if not paths or len(paths) > 5:
-        raise ValueError("每款必须有 1-5 张参考图")
-    return tuple(paths)
+    value = plan.get("front_image")
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"参考计划正面图路径无效：{plan_path}")
+    path = Path(value)
+    if not path.is_absolute():
+        path = plan_path.parent / path
+    return (path,)
+
+
+def _original_front_path(product_root: Path, product_id: str) -> Path:
+    context_path = product_root / "product_context.json"
+    if not context_path.is_file():
+        raise FileNotFoundError(f"缺少原始正面图上下文：{context_path}")
+    context = read_json(context_path)
+    if context.get("product_id") != product_id:
+        raise ValueError(f"原始正面图上下文与商品编号不一致：{context_path}")
+    selected = context.get("selected_references")
+    if not isinstance(selected, list) or not selected:
+        raise ValueError(f"原始正面图上下文缺少 selected_references：{context_path}")
+    front = selected[0]
+    if not isinstance(front, dict) or front.get("role") != "front":
+        raise ValueError(f"原始正面图上下文首项不是 front：{context_path}")
+    value = front.get("local_path")
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"原始正面图上下文缺少 local_path：{context_path}")
+    path = Path(value)
+    if not path.is_absolute():
+        path = product_root / path
+    try:
+        path.resolve().relative_to(product_root.resolve())
+    except ValueError as exc:
+        raise ValueError(f"原始正面图必须位于商品运行目录内：{path}") from exc
+    if not path.is_file() or path.stat().st_size == 0:
+        raise FileNotFoundError(f"原始正面图不存在或为空：{path}")
+    return path
 
 
 def _evaluate(
@@ -680,6 +663,29 @@ def generate_and_evaluate(product_root: Path, retry: bool = False) -> dict[str, 
     plan_path = product_root / "reference_plan.json"
     if not plan_path.is_file():
         raise FileNotFoundError(f"缺少人工填写的参考计划：{plan_path}")
+    geometry_profile_path = product_root / "geometry" / f"{product_id}.json"
+    if not geometry_profile_path.is_file():
+        raise FileNotFoundError(
+            f"缺少视觉几何 profile（{product_id}）：{geometry_profile_path}"
+        )
+    geometry_profile = load_vision_geometry(geometry_profile_path, product_id)
+    original_front_path = _original_front_path(product_root, product_id)
+    attempt = _attempt_number(product_root, retry)
+    attempt_root = product_root / f"attempt-{attempt:02d}"
+    state_path = product_root / "manifests" / "generation_state.json"
+    in_progress_state = {
+        "workflow_mode": "background_only_edit",
+        "status": "in_progress",
+        "product_id": product_id,
+        "attempt": attempt,
+        "attempt_root": str(attempt_root),
+        "reference_plan": str(plan_path),
+        "reference_plan_sha256": file_sha256(plan_path),
+        "vision_geometry_profile": str(geometry_profile_path),
+        "vision_geometry_schema": geometry_profile.schema_version,
+        "started_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+    }
+    write_json(state_path, in_progress_state)
     run_command(
         [
             sys.executable,
@@ -690,9 +696,7 @@ def generate_and_evaluate(product_root: Path, retry: bool = False) -> dict[str, 
         ]
     )
     references = _reference_paths(plan_path)
-    attempt = _attempt_number(product_root, retry)
-    attempt_root = product_root / f"attempt-{attempt:02d}"
-    for name in ("logs", "generated", "qc", "manifests"):
+    for name in ("prepared", "mask", "logs", "generated", "manifests"):
         (attempt_root / name).mkdir(parents=True, exist_ok=True)
     shutil.copy2(plan_path, attempt_root / "reference_plan.json")
     prompt_path = attempt_root / "logs" / f"{product_id}_prompt.txt"
@@ -706,47 +710,104 @@ def generate_and_evaluate(product_root: Path, retry: bool = False) -> dict[str, 
             str(prompt_path),
         ]
     )
+    edit_image_path = attempt_root / "prepared" / f"{product_id}_front.png"
+    mask_path = (
+        attempt_root / "mask" / f"{product_id}_product-protection-mask.png"
+    )
+    overlay_path = attempt_root / "mask" / f"{product_id}_editable-overlay.png"
+    mask_report_path = attempt_root / "logs" / f"{product_id}_vision-mask-report.json"
+    assessment = create_background_edit_assets(
+        original_front_path,
+        edit_image_path,
+        mask_path,
+        overlay_path,
+        mask_report_path,
+        geometry_profile_path,
+        product_id,
+    )
+    automatic_allowed = (
+        getattr(assessment, "automatic_wawapi_edit_allowed", None) is True
+    )
+    reasons = list(getattr(assessment, "reasons", ()) or ())
+    if (
+        assessment.status == "ok"
+        and not automatic_allowed
+        and "automatic_wawapi_edit_not_allowed" not in reasons
+    ):
+        reasons.append("automatic_wawapi_edit_not_allowed")
+    mask_state = {
+        **in_progress_state,
+        "edit_image": str(edit_image_path),
+        "mask_image": str(mask_path),
+        "mask_overlay": str(overlay_path),
+        "mask_assessment": str(mask_report_path),
+        "mask_status": assessment.status,
+        "mask_reasons": reasons,
+        "automatic_wawapi_edit_allowed": automatic_allowed,
+    }
+    if assessment.status != "ok" or not automatic_allowed:
+        blocked_state = {
+            **mask_state,
+            "status": "blocked_by_mask_gate",
+            "blocked_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        }
+        write_json(attempt_root / "manifests" / "generation_result.json", blocked_state)
+        write_json(state_path, blocked_state)
+        if assessment.status == "ok":
+            raise RuntimeError(
+                f"{product_id} Mask 虽为 ok，但 automatic_wawapi_edit_allowed 不是 True，禁止调用 Wawapi Edit"
+            )
+        raise RuntimeError(
+            f"{product_id} Mask 技术门禁为 {assessment.status}，禁止调用 Wawapi Edit"
+        )
+    mask_report = read_json(mask_report_path)
+    if (
+        mask_report.get("status") != "ok"
+        or mask_report.get("automatic_wawapi_edit_allowed") is not True
+    ):
+        raise RuntimeError(f"{product_id} Mask 报告未同时通过双门禁，禁止调用 Wawapi Edit")
+    identity_keys = (
+        "product_id",
+        "source_sha256",
+        "geometry_sha256",
+        "prepared_sha256",
+        "mask_sha256",
+    )
+    identity = {key: mask_report.get(key) for key in identity_keys}
+    if identity["product_id"] != product_id or any(
+        not isinstance(identity[key], str) or not identity[key]
+        for key in identity_keys[1:]
+    ):
+        raise RuntimeError(f"{product_id} Mask 报告缺少完整身份摘要，禁止调用 Wawapi Edit")
+    for path, key, label in (
+        (edit_image_path, "prepared_sha256", "prepared 原图"),
+        (mask_path, "mask_sha256", "最终 Mask"),
+    ):
+        if file_sha256(path) != identity[key]:
+            raise RuntimeError(f"{product_id} {label}在联网前发生变化，禁止调用 Wawapi Edit")
+    mask_state.update(identity)
+    write_json(state_path, mask_state)
+
     generated_path = attempt_root / "generated" / f"{product_id}.png"
-    generation = generate_to_path(
+    generation = edit_background_to_path(
         prompt_path.read_text(encoding="utf-8"),
-        references,
+        edit_image_path,
+        mask_path,
         generated_path,
-        attempt_root / "logs" / f"{product_id}_generate.json",
-    )
-    pre_qc_path = attempt_root / "qc" / "pre_watermark_qc.json"
-    pre_qc = _evaluate(
-        image_path=generated_path,
-        plan_path=plan_path,
-        output_path=pre_qc_path,
-        stage="pre-watermark",
-    )
-    _create_contact_sheet(
-        [
-            *[
-                (path, f"REF {index:02d}{' FRONT' if index == 1 else ''}")
-                for index, path in enumerate(references, start=1)
-            ],
-            (generated_path, "GENERATED"),
-        ],
-        attempt_root / "review_contact_sheet.jpg",
+        attempt_root / "logs" / f"{product_id}_edit.json",
     )
     state = {
-        "product_id": product_id,
-        "attempt": attempt,
-        "attempt_root": str(attempt_root),
-        "reference_plan": str(plan_path),
-        "reference_plan_sha256": file_sha256(plan_path),
+        **mask_state,
+        "status": "completed",
         "generated_image": str(generated_path),
         "generated_image_sha256": file_sha256(generated_path),
-        "pre_watermark_qc": str(pre_qc_path),
-        "pre_watermark_decision": pre_qc.get("decision"),
         "provider": generation.provider,
         "task_id": generation.task_id,
         "helper_output": str(generation.helper_output),
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
     }
     write_json(attempt_root / "manifests" / "generation_result.json", state)
-    write_json(product_root / "manifests" / "generation_state.json", state)
+    write_json(state_path, state)
     return state
 
 
@@ -772,7 +833,7 @@ def generate_selected(
                 result = future.result()
                 results.append(result)
                 print(
-                    f"GENERATED {product_id}: {result['pre_watermark_decision']}",
+                    f"EDITED {product_id}: {result['mask_status']}",
                     flush=True,
                 )
             except Exception as exc:
@@ -788,42 +849,6 @@ def generate_selected(
     if errors:
         raise RuntimeError(f"生成阶段有 {len(errors)} 款失败")
     return summary
-
-
-def _record_get(record_id: str) -> ProductRecord:
-    payload = run_lark(
-        [
-            "base",
-            "+record-get",
-            "--base-token",
-            BASE_TOKEN,
-            "--table-id",
-            TABLE_ID,
-            "--record-id",
-            record_id,
-            "--field-id",
-            FIELD_PRODUCT_ID,
-            "--field-id",
-            FIELD_FRONT,
-            "--field-id",
-            FIELD_PRODUCT_IMAGES,
-            "--field-id",
-            FIELD_SIDE,
-            "--field-id",
-            FIELD_MAIN,
-            "--format",
-            "json",
-            "--as",
-            "user",
-        ]
-    )
-    data = payload.get("data")
-    if not isinstance(data, dict):
-        raise ValueError("记录回读缺少 data")
-    product_id = str(
-        _field_value(data, (data.get("data") or [[]])[0], FIELD_PRODUCT_ID) or ""
-    )
-    return parse_record_search_payload(payload, product_id)
 
 
 def _upload_attachment(record_id: str, image_path: Path) -> dict[str, Any]:
@@ -845,8 +870,125 @@ def _upload_attachment(record_id: str, image_path: Path) -> dict[str, Any]:
             "json",
             "--as",
             "user",
-        ]
+        ],
+        attempts=1,
     )
+
+
+def _upload_file_token(
+    payload: dict[str, Any],
+    *,
+    record_id: str,
+    field_id: str,
+    target_filename: str,
+) -> str:
+    if payload.get("ok") is not True:
+        raise RuntimeError("飞书附件追加未返回 ok: true")
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        raise RuntimeError("飞书附件追加响应缺少 data")
+
+    if "attachments" in data:
+        attachments = data.get("attachments")
+        record_attachments = (
+            attachments.get(record_id) if isinstance(attachments, dict) else None
+        )
+        field_attachments = (
+            record_attachments.get(field_id)
+            if isinstance(record_attachments, dict)
+            else None
+        )
+        if not isinstance(field_attachments, list):
+            raise RuntimeError("飞书附件追加响应缺少指定记录和字段的附件数组")
+        matches = [
+            item
+            for item in field_attachments
+            if isinstance(item, dict)
+            and target_filename in {item.get("filename"), item.get("name")}
+        ]
+        if len(matches) != 1:
+            raise RuntimeError("飞书附件追加响应未唯一匹配目标文件名")
+        token = matches[0].get("file_token") or matches[0].get("token")
+        if isinstance(token, str) and token:
+            return token
+        raise RuntimeError("飞书目标附件缺少 file_token")
+
+    direct = data.get("file_token")
+    if isinstance(direct, str) and direct:
+        return direct
+    tokens = data.get("file_tokens")
+    if isinstance(tokens, list):
+        valid_tokens = [item for item in tokens if isinstance(item, str) and item]
+        if len(valid_tokens) == 1:
+            return valid_tokens[0]
+        if len(valid_tokens) > 1:
+            raise RuntimeError("飞书附件追加响应未返回唯一 file_token")
+    raise RuntimeError("飞书附件追加响应缺少 file_token")
+
+
+def _versioned_upload_receipt_path(
+    product_root: Path,
+    watermarked_path: Path,
+) -> Path:
+    return (
+        product_root
+        / "manifests"
+        / f"upload_receipt.{watermarked_path.stem}.json"
+    )
+
+
+def _versioned_upload_attempt_path(
+    product_root: Path,
+    watermarked_path: Path,
+) -> Path:
+    return (
+        product_root
+        / "manifests"
+        / f"upload_attempt.{watermarked_path.stem}.json"
+    )
+
+
+def _receipt_matches_delivery(
+    receipt: dict[str, Any],
+    *,
+    state: dict[str, Any],
+    record: ProductRecord,
+    expected_generated_sha: str,
+    watermarked_path: Path,
+) -> bool:
+    uploaded_attachment = receipt.get("uploaded_attachment")
+    if not isinstance(uploaded_attachment, dict):
+        return False
+    upload_token = uploaded_attachment.get("token")
+    if not isinstance(upload_token, str) or not upload_token:
+        return False
+
+    local_file = receipt.get("local_file")
+    if not isinstance(local_file, str) or not local_file:
+        return False
+    try:
+        local_file_matches = Path(local_file).resolve() == watermarked_path.resolve()
+    except (OSError, RuntimeError):
+        return False
+
+    local_file_sha = receipt.get("local_file_sha256")
+    if (
+        receipt.get("status") != "uploaded"
+        or state.get("workflow_mode") != "background_only_edit"
+        or receipt.get("workflow_mode") != state.get("workflow_mode")
+        or receipt.get("product_id") != record.product_id
+        or receipt.get("record_id") != record.record_id
+        or receipt.get("field_id") != FIELD_MAIN
+        or receipt.get("generated_image_sha256") != expected_generated_sha
+        or not local_file_matches
+        or receipt.get("target_filename") != watermarked_path.name
+        or not isinstance(local_file_sha, str)
+        or not local_file_sha
+        or not watermarked_path.is_file()
+        or watermarked_path.stat().st_size == 0
+    ):
+        return False
+    return file_sha256(watermarked_path) == local_file_sha
 
 
 def _review_is_approved(path: Path, state: dict[str, Any]) -> bool:
@@ -861,20 +1003,92 @@ def _review_is_approved(path: Path, state: dict[str, Any]) -> bool:
     return review.get("generated_image_sha256") in {None, expected_sha}
 
 
+def failed_qc_check_ids(qc: dict[str, Any]) -> tuple[str, ...]:
+    checks = qc.get("checks")
+    if not isinstance(checks, list):
+        return ()
+    failed_ids = {
+        str(check.get("id"))
+        for check in checks
+        if isinstance(check, dict)
+        and check.get("status") == "fail"
+        and check.get("id")
+    }
+    return tuple(sorted(failed_ids))
+
+
+def is_size_only_failure(qc: dict[str, Any]) -> bool:
+    return (
+        qc.get("decision") == "fail"
+        and failed_qc_check_ids(qc) == ("composition_width",)
+    )
+
+
+def build_size_override_record(
+    *,
+    product_id: str,
+    state: dict[str, Any],
+    pre_qc: dict[str, Any],
+    post_qc: dict[str, Any],
+    authorization_reference: str,
+) -> dict[str, Any]:
+    failing_qcs = [qc for qc in (pre_qc, post_qc) if qc.get("decision") == "fail"]
+    if not failing_qcs or not all(is_size_only_failure(qc) for qc in failing_qcs):
+        raise ValueError(f"{product_id} 存在非大小类 QC 失败，不能写入大小覆盖记录")
+    failed_ids = sorted(
+        {check_id for qc in failing_qcs for check_id in failed_qc_check_ids(qc)}
+    )
+    return {
+        "schema_version": "override-1.0",
+        "status": "approved",
+        "override_type": "composition_qc_gate",
+        "approved_by": "用户",
+        "approved_at": "2026-08-06",
+        "scope": product_id,
+        "attempt": state.get("attempt"),
+        "generated_image_sha256": state.get("generated_image_sha256"),
+        "original_qc_decision": {
+            "pre_watermark": pre_qc.get("decision"),
+            "post_watermark": post_qc.get("decision"),
+        },
+        "failed_check_ids": failed_ids,
+        "reason": "产品宽度占比未落入自动 QC 目标区间",
+        "authorization_reference": authorization_reference,
+        "effect": "仅覆盖本次产品大小构图门禁，不覆盖结构、裁切、串号或特殊件错误",
+        "upload_decision": "user_override_for_append",
+    }
+
+
 def _derive_upload_decision(
     pre_qc: dict[str, Any],
     post_qc: dict[str, Any],
     final_review_approved: bool,
     authorized: bool,
+    allow_size_override: bool = False,
 ) -> str:
-    decisions = {pre_qc.get("decision"), post_qc.get("decision")}
-    if "fail" in decisions:
+    failing_qcs = [qc for qc in (pre_qc, post_qc) if qc.get("decision") == "fail"]
+    if failing_qcs and (
+        not allow_size_override
+        or not all(is_size_only_failure(qc) for qc in failing_qcs)
+    ):
         return "blocked_by_qc"
     if not final_review_approved:
         return "requires_human_review"
     if not authorized:
         return "not_authorized"
+    if failing_qcs:
+        return "user_override_for_append"
     return "approved_for_append"
+
+
+def _automatic_audit_decision(
+    pre_qc: dict[str, Any],
+    post_qc: dict[str, Any],
+    upload_decision: str,
+) -> str:
+    if "fail" in {pre_qc.get("decision"), post_qc.get("decision")}:
+        return "blocked_by_qc"
+    return upload_decision
 
 
 def _write_audit(
@@ -921,166 +1135,239 @@ def watermark_and_upload(
     product_root: Path,
     record: ProductRecord,
     authorization_reference: str,
+    allow_size_override: bool = False,
+    append_version: str = "",
 ) -> dict[str, Any]:
+    authorization_reference = _normalized_authorization_reference(
+        authorization_reference
+    )
     state_path = product_root / "manifests" / "generation_state.json"
     state = read_json(state_path)
     if state.get("product_id") != record.product_id:
         raise ValueError(f"{record.product_id} 生成状态串号")
+    if (
+        state.get("workflow_mode") != "background_only_edit"
+        or state.get("status") != "completed"
+    ):
+        raise RuntimeError(
+            f"{record.product_id} generation_state 不是 completed 的 background_only_edit Mask Edit 状态，禁止交付"
+        )
+    mask_report_value = state.get("mask_assessment")
+    if (
+        state.get("mask_status") != "ok"
+        or state.get("automatic_wawapi_edit_allowed") is not True
+        or not isinstance(mask_report_value, str)
+    ):
+        if state.get("automatic_wawapi_edit_allowed") is not True:
+            raise RuntimeError(
+                f"{record.product_id} generation_state 的 automatic_wawapi_edit_allowed 不是 True，禁止交付"
+            )
+        raise RuntimeError(f"{record.product_id} 缺少通过的 Mask 技术门禁，禁止交付")
+    mask_report = read_json(Path(mask_report_value))
+    if mask_report.get("status") != "ok":
+        raise RuntimeError(f"{record.product_id} Mask 技术门禁不是 ok，禁止交付")
+    if mask_report.get("automatic_wawapi_edit_allowed") is not True:
+        raise RuntimeError(
+            f"{record.product_id} Mask 报告的 automatic_wawapi_edit_allowed 不是 True，禁止交付"
+        )
+    identity_keys = (
+        "product_id",
+        "source_sha256",
+        "geometry_sha256",
+        "prepared_sha256",
+        "mask_sha256",
+    )
+    state_identity = {key: state.get(key) for key in identity_keys}
+    report_identity = {key: mask_report.get(key) for key in identity_keys}
+    if state_identity != report_identity or state_identity["product_id"] != record.product_id:
+        raise RuntimeError(f"{record.product_id} state 与 Mask 报告身份摘要不一致，禁止交付")
+    if any(
+        not isinstance(state_identity[key], str) or not state_identity[key]
+        for key in identity_keys[1:]
+    ):
+        raise RuntimeError(f"{record.product_id} 缺少完整身份摘要，禁止交付")
+    for path_key, hash_key, label in (
+        ("edit_image", "prepared_sha256", "prepared 原图"),
+        ("mask_image", "mask_sha256", "最终 Mask"),
+    ):
+        asset_value = state.get(path_key)
+        if not isinstance(asset_value, str) or not asset_value:
+            raise RuntimeError(f"{record.product_id} generation_state 缺少{label}路径")
+        asset_path = Path(asset_value)
+        if not asset_path.is_file() or asset_path.stat().st_size == 0:
+            raise FileNotFoundError(f"{label}不存在或为空：{asset_path}")
+        if file_sha256(asset_path) != state_identity[hash_key]:
+            raise RuntimeError(f"{record.product_id} {label} SHA-256 与身份摘要不一致")
     generated_path = Path(str(state["generated_image"]))
-    pre_qc_path = Path(str(state["pre_watermark_qc"]))
-    pre_qc = read_json(pre_qc_path)
-    if pre_qc.get("decision") == "fail":
-        return {"product_id": record.product_id, "status": "blocked_by_pre_qc"}
-
-    pre_review_path = product_root / "manifests" / "pre_watermark_review.json"
-    if not _review_is_approved(pre_review_path, state):
-        return {"product_id": record.product_id, "status": "awaiting_pre_watermark_review"}
+    if not generated_path.is_file() or generated_path.stat().st_size == 0:
+        raise FileNotFoundError(f"Edit 结果不存在：{generated_path}")
+    expected_generated_sha = state.get("generated_image_sha256")
+    if not isinstance(expected_generated_sha, str) or not expected_generated_sha:
+        raise RuntimeError(f"{record.product_id} generation_state 缺少生成图 SHA-256")
+    if file_sha256(generated_path) != expected_generated_sha:
+        raise RuntimeError(f"{record.product_id} 生成图 SHA-256 与 generation_state 不一致")
 
     white_dir = product_root / "white-bg"
-    white_dir.mkdir(parents=True, exist_ok=True)
-    watermarked_path = white_dir / f"{record.product_id}_watermarked.png"
-    if not watermarked_path.is_file():
-        run_command(
-            [
-                sys.executable,
-                str(WATERMARK_SCRIPT),
-                "--input",
-                str(generated_path),
-                "--output-dir",
-                str(white_dir),
-                "--product-id",
-                record.product_id,
-                "--workers",
-                "1",
-            ]
+    watermark_command, watermarked_path = build_watermark_command(
+        generated_path=generated_path,
+        output_dir=white_dir,
+        product_id=record.product_id,
+        append_version=append_version,
+    )
+    versioned_receipt_path = _versioned_upload_receipt_path(
+        product_root,
+        watermarked_path,
+    )
+    upload_attempt_path = _versioned_upload_attempt_path(
+        product_root,
+        watermarked_path,
+    )
+    legacy_receipt_path = product_root / "manifests" / "upload_receipt.json"
+    existing_receipt_path = (
+        versioned_receipt_path
+        if versioned_receipt_path.is_file()
+        else legacy_receipt_path
+    )
+    if existing_receipt_path.is_file():
+        existing_receipt = read_json(existing_receipt_path)
+        if _receipt_matches_delivery(
+            existing_receipt,
+            state=state,
+            record=record,
+            expected_generated_sha=expected_generated_sha,
+            watermarked_path=watermarked_path,
+        ):
+            return existing_receipt
+
+    if upload_attempt_path.is_file():
+        existing_attempt = read_json(upload_attempt_path)
+        if (
+            existing_attempt.get("status") == "uploaded"
+            and _receipt_matches_delivery(
+                existing_attempt,
+                state=state,
+                record=record,
+                expected_generated_sha=expected_generated_sha,
+                watermarked_path=watermarked_path,
+            )
+        ):
+            return existing_attempt
+        raise RuntimeError(
+            f"{record.product_id} 已存在未决或不完整的上传意图，必须人工处置，禁止自动重传"
         )
+
+    white_dir.mkdir(parents=True, exist_ok=True)
+    run_command(watermark_command)
     if not watermarked_path.is_file() or watermarked_path.stat().st_size == 0:
         raise FileNotFoundError(f"水印图未生成：{watermarked_path}")
+    resolved_watermarked_path = watermarked_path.resolve()
+    watermarked_sha256 = file_sha256(watermarked_path)
 
-    attempt_root = Path(str(state["attempt_root"]))
-    post_qc_path = attempt_root / "qc" / "post_watermark_qc.json"
-    post_qc = _evaluate(
-        image_path=watermarked_path,
-        plan_path=product_root / "reference_plan.json",
-        output_path=post_qc_path,
-        stage="post-watermark",
-    )
-    references = _reference_paths(product_root / "reference_plan.json")
-    _create_contact_sheet(
-        [
-            (references[0], "REFERENCE FRONT"),
-            (generated_path, "GENERATED"),
-            (watermarked_path, "WATERMARKED"),
-        ],
-        attempt_root / "delivery_review_contact_sheet.jpg",
-    )
+    upload_attempt = {
+        "status": "uploading",
+        "uploading_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "workflow_mode": state["workflow_mode"],
+        "product_id": record.product_id,
+        "record_id": record.record_id,
+        "field_id": FIELD_MAIN,
+        "generated_image_sha256": expected_generated_sha,
+        "target_filename": watermarked_path.name,
+        "local_file": str(resolved_watermarked_path),
+        "local_file_sha256": watermarked_sha256,
+        "authorization_reference": authorization_reference,
+    }
+    write_json(upload_attempt_path, upload_attempt)
 
-    final_review_path = product_root / "manifests" / "manual_review.json"
-    final_review_approved = _review_is_approved(final_review_path, state)
-    authorization_path = product_root / "manifests" / "append_authorization.json"
-    if not authorization_path.exists():
-        write_json(
-            authorization_path,
-            {
-                "status": "approved",
-                "approved_by": "用户",
-                "approved_at": "2026-08-06",
-                "approval_reference": authorization_reference,
-            },
-        )
-    authorization = read_json(authorization_path)
-    authorized = authorization.get("status") == "approved"
-    upload_decision = _derive_upload_decision(
-        pre_qc,
-        post_qc,
-        final_review_approved,
-        authorized,
-    )
-    audit_path = product_root / "manifests" / "audit.json"
-    _write_audit(
-        image_path=watermarked_path,
-        plan_path=product_root / "reference_plan.json",
-        pre_qc_path=pre_qc_path,
-        post_qc_path=post_qc_path,
-        manual_review_path=final_review_path if final_review_approved else None,
-        authorization_path=authorization_path if authorized else None,
-        audit_path=audit_path,
-        upload_decision=upload_decision,
-    )
-    if upload_decision != "approved_for_append":
-        return {
-            "product_id": record.product_id,
-            "status": upload_decision,
-            "watermarked_image": str(watermarked_path),
-            "post_watermark_decision": post_qc.get("decision"),
-        }
-
-    current = _record_get(record.record_id)
-    if current.product_id != record.product_id:
-        raise ValueError(f"{record.product_id} 上传前记录串号")
-    before = current.main_images
-    upload_plan = plan_upload(before, watermarked_path.name)
-    if upload_plan.action == "conflict":
-        raise RuntimeError(f"{record.product_id} 主图中存在多个同名附件")
     upload_response: dict[str, Any] | None = None
-    if upload_plan.action == "upload":
+    try:
         upload_response = _upload_attachment(record.record_id, watermarked_path)
-        time.sleep(1)
-    after_record = _record_get(record.record_id)
-    if after_record.product_id != record.product_id:
-        raise ValueError(f"{record.product_id} 上传后记录串号")
-    matches = [
-        item for item in after_record.main_images if item.name == watermarked_path.name
-    ]
-    if len(matches) != 1:
-        raise RuntimeError(f"{record.product_id} 上传后未找到唯一同名附件")
-    target = matches[0]
-    if not verify_append(before, after_record.main_images, target.token):
-        raise RuntimeError(f"{record.product_id} 原主图附件未完整保留")
+        file_token = _upload_file_token(
+            upload_response,
+            record_id=record.record_id,
+            field_id=FIELD_MAIN,
+            target_filename=watermarked_path.name,
+        )
+    except Exception as exc:
+        failed_attempt = {
+            **upload_attempt,
+            "status": "failed",
+            "failed_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "error": {
+                "type": type(exc).__name__,
+                "message": str(exc),
+            },
+        }
+        if upload_response is not None:
+            failed_attempt["upload_response"] = upload_response
+        write_json(upload_attempt_path, failed_attempt)
+        raise
+
+    target = Attachment(token=file_token, name=watermarked_path.name)
     receipt = {
         "product_id": record.product_id,
         "record_id": record.record_id,
         "field_id": FIELD_MAIN,
-        "local_file": str(watermarked_path),
-        "local_file_sha256": file_sha256(watermarked_path),
-        "status": (
-            "already_present_and_verified"
-            if upload_plan.action == "already_present"
-            else "uploaded_and_verified"
-        ),
-        "verified_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-        "before_attachments": [asdict(item) for item in before],
-        "after_attachments": [asdict(item) for item in after_record.main_images],
+        "local_file": str(resolved_watermarked_path),
+        "target_filename": watermarked_path.name,
+        "local_file_sha256": watermarked_sha256,
+        "status": "uploaded",
+        "uploaded_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "authorization_reference": authorization_reference,
+        "workflow_mode": state["workflow_mode"],
+        "generation_status": state["status"],
+        "generated_image": str(generated_path),
+        "generated_image_sha256": expected_generated_sha,
         "uploaded_attachment": asdict(target),
-        "original_attachments_preserved": True,
         "upload_response": upload_response,
     }
-    write_json(product_root / "manifests" / "upload_receipt.json", receipt)
+    write_json(upload_attempt_path, receipt)
+    write_json(versioned_receipt_path, receipt)
+    write_json(legacy_receipt_path, receipt)
     return receipt
+
+
+def _delivery_record_from_context(product_root: Path, product_id: str) -> ProductRecord:
+    context_path = product_root / "product_context.json"
+    if not context_path.is_file():
+        raise FileNotFoundError(f"{product_id} 缺少本地 product_context：{context_path}")
+    context = read_json(context_path)
+    if context.get("product_id") != product_id:
+        raise ValueError(f"{product_id} product_context 商品编号不一致")
+    record_id = context.get("record_id")
+    if not isinstance(record_id, str) or not record_id.strip():
+        raise ValueError(f"{product_id} product_context 缺少 record_id")
+    return ProductRecord(product_id, record_id.strip(), (), (), (), ())
 
 
 def deliver_selected(
     run_root: Path,
     product_ids: Sequence[str],
     authorization_reference: str,
+    allow_size_override: bool = False,
+    append_version: str = "",
 ) -> dict[str, Any]:
+    authorization_reference = _normalized_authorization_reference(
+        authorization_reference
+    )
     selected = _validate_product_ids(product_ids)
-    records = {record.product_id: record for record in find_target_records(selected)}
     results: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
     for product_id in selected:
         try:
+            product_root = run_root / product_id
+            record = _delivery_record_from_context(product_root, product_id)
             result = watermark_and_upload(
-                run_root / product_id,
-                records[product_id],
+                product_root,
+                record,
                 authorization_reference,
+                allow_size_override,
+                append_version,
             )
             results.append(result)
             print(f"DELIVER {product_id}: {result['status']}", flush=True)
         except Exception as exc:
             errors.append({"product_id": product_id, "error": str(exc)})
             print(f"DELIVER_FAILED {product_id}: {exc}", file=sys.stderr, flush=True)
-        time.sleep(1)
     summary = {
         "ok": not errors,
         "delivered_at": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -1093,61 +1380,9 @@ def deliver_selected(
     return summary
 
 
-def verify_selected(run_root: Path, product_ids: Sequence[str]) -> dict[str, Any]:
-    selected = _validate_product_ids(product_ids)
-    records = {record.product_id: record for record in find_target_records(selected)}
-    results: list[dict[str, Any]] = []
-    errors: list[dict[str, str]] = []
-    for product_id in selected:
-        try:
-            receipt_path = (
-                run_root / product_id / "manifests" / "upload_receipt.json"
-            )
-            receipt = read_json(receipt_path)
-            remote = _record_get(records[product_id].record_id)
-            before = tuple(
-                Attachment(**item) for item in receipt.get("before_attachments", [])
-            )
-            target_payload = receipt.get("uploaded_attachment") or {}
-            target = Attachment(**target_payload)
-            filename_matches = [
-                item for item in remote.main_images if item.name == target.name
-            ]
-            if remote.product_id != product_id:
-                raise RuntimeError("远端记录产品编号不一致")
-            if len(filename_matches) != 1:
-                raise RuntimeError("远端主图未找到唯一目标附件")
-            if not verify_append(before, remote.main_images, target.token):
-                raise RuntimeError("远端主图未保留全部原附件")
-            result = {
-                "product_id": product_id,
-                "status": "verified",
-                "record_id": remote.record_id,
-                "target": asdict(target),
-                "main_image_count": len(remote.main_images),
-            }
-            results.append(result)
-            print(f"VERIFIED {product_id}", flush=True)
-        except Exception as exc:
-            errors.append({"product_id": product_id, "error": str(exc)})
-            print(f"VERIFY_FAILED {product_id}: {exc}", file=sys.stderr, flush=True)
-        time.sleep(1)
-    summary = {
-        "ok": not errors,
-        "verified_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-        "verified": len(results),
-        "results": results,
-        "errors": errors,
-    }
-    write_json(run_root / "verify_summary.json", summary)
-    if errors:
-        raise RuntimeError(f"远端验证有 {len(errors)} 款失败")
-    return summary
-
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="SY1537-SY1552 珠宝白底图生成、水印、主图追加与验证管线。"
+        description="SY1537-SY1552 珠宝白底图 Mask Edit、水印与主图追加管线。"
     )
     parser.add_argument(
         "--run-root",
@@ -1157,24 +1392,38 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    prepare = subparsers.add_parser("prepare", help="定位记录、下载并预处理参考图")
+    prepare = subparsers.add_parser("prepare", help="定位记录、下载并预处理正面图")
     prepare.add_argument("--dry-run", action="store_true", help="只读取并显示选图计划")
 
-    generate = subparsers.add_parser("generate", help="使用 Yuan v4 生成并执行水印前 QC")
+    generate_help = "通过技术门禁后执行 Yuan v4 Wawapi Mask Edit"
+    generate = subparsers.add_parser(
+        "generate",
+        help=generate_help,
+        description=generate_help,
+    )
     generate.add_argument("--product-id", action="append", default=[])
     generate.add_argument("--workers", type=int, choices=(1, 2), default=2)
     generate.add_argument("--retry", action="store_true", help="修订参考计划后执行唯一一次重试")
 
-    deliver = subparsers.add_parser("deliver", help="加水印、执行门禁并串行追加主图")
+    deliver = subparsers.add_parser("deliver", help="加水印并串行追加主图")
     deliver.add_argument("--product-id", action="append", default=[])
     deliver.add_argument(
         "--authorization-reference",
-        default=AUTHORIZATION_REFERENCE,
+        required=True,
+        type=_normalized_authorization_reference,
         help="写入追加授权记录的用户指令引用",
     )
+    deliver.add_argument(
+        "--allow-size-override",
+        action="store_true",
+        help="兼容保留；background-only Edit 新流程不执行尺寸 QC，该参数不改变交付判断",
+    )
+    deliver.add_argument(
+        "--append-version",
+        default="",
+        help="新版本标识；生成独立文件名后追加，不覆盖已有同名主图",
+    )
 
-    verify = subparsers.add_parser("verify", help="回读远端主图并验证原附件保留")
-    verify.add_argument("--product-id", action="append", default=[])
     return parser
 
 
@@ -1195,9 +1444,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.run_root,
                 args.product_id,
                 args.authorization_reference,
+                args.allow_size_override,
+                args.append_version,
             )
         else:
-            payload = verify_selected(args.run_root, args.product_id)
+            raise ValueError(f"未知活动命令：{args.command}")
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0
     except Exception as exc:
