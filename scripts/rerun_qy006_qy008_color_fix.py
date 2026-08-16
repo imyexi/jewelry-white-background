@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -7,8 +8,32 @@ WORKSPACE = Path(r"C:\Users\Administrator\Documents\珠宝白底图生成")
 sys.path.insert(0, str(WORKSPACE))
 sys.path.insert(0, str(WORKSPACE / "scripts"))
 
-from run_jewelry_base_pipeline import PYTHON, WATERMARK, run
 from yuan_image_generation_adapter import generate_to_path
+
+
+PYTHON = sys.executable
+WATERMARK = str(
+    Path.home()
+    / ".codex"
+    / "skills"
+    / "yuanyuan-ruyi-watermark"
+    / "scripts"
+    / "watermark_images.py"
+)
+
+
+def run(command):
+    completed = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(completed.stderr or completed.stdout)
+    return completed
 
 
 SOURCE_ROOT = WORKSPACE / "outputs" / "jewelry-white-background" / "base-021-20260717"
