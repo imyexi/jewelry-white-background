@@ -814,6 +814,78 @@ def _validate_cropped_inputs(
         raise ValueError("Crop Manifest 商品身份不一致")
     if manifest.get("crop_size") != list(original.size):
         raise ValueError("Crop Manifest 裁剪尺寸不一致")
+    if manifest.get("source_size") != cropped_geometry.get("source_size"):
+        raise ValueError("Crop Manifest source_size 与裁剪几何不一致")
+    if manifest.get("crop_box") != cropped_geometry.get("crop_box"):
+        raise ValueError("Crop Manifest crop_box 与裁剪几何不一致")
+    if manifest.get("target_max_occupancy") != [77, 100]:
+        raise ValueError("Crop Manifest target_max_occupancy 不合法")
+    if manifest.get("crop_algorithm") != "geometry-crop-77-over-100-v1":
+        raise ValueError("Crop Manifest 裁剪算法不受支持")
+    if manifest.get("source_geometry_sha256") != cropped_geometry.get(
+        "source_geometry_sha256"
+    ):
+        raise ValueError("Crop Manifest 源几何语义摘要不一致")
+    if manifest.get("detection_image_sha256") != cropped_geometry.get(
+        "detection_image_sha256"
+    ):
+        raise ValueError("Crop Manifest 全局检测图摘要不一致")
+    source_size = manifest["source_size"]
+    crop_box = manifest["crop_box"]
+    content_box = manifest.get("content_box")
+    if (
+        not isinstance(content_box, list)
+        or len(content_box) != 4
+        or not all(type(value) is int for value in content_box)
+        or not (
+            0 <= crop_box[0] <= content_box[0] < content_box[2] <= crop_box[2] <= source_size[0]
+            and 0
+            <= crop_box[1]
+            <= content_box[1]
+            < content_box[3]
+            <= crop_box[3]
+            <= source_size[1]
+        )
+    ):
+        raise ValueError("Crop Manifest content_box 或 crop_box 不合法")
+    limited_axes = manifest.get("source_limited_axes")
+    if (
+        not isinstance(limited_axes, list)
+        or len(set(limited_axes)) != len(limited_axes)
+        or any(axis not in {"width", "height"} for axis in limited_axes)
+    ):
+        raise ValueError("Crop Manifest source_limited_axes 不合法")
+    expected_border_ids = [
+        primitive["id"]
+        for primitive in cropped_geometry.get("primitives", [])
+        if primitive.get("touches_border") is True
+    ]
+    if manifest.get("verified_source_border_primitive_ids") != expected_border_ids:
+        raise ValueError("Crop Manifest 源图触边验证记录不一致")
+    actual_occupancy = manifest.get("actual_occupancy")
+    expected_occupancy = {
+        "width": (content_box[2] - content_box[0]) / original.width,
+        "height": (content_box[3] - content_box[1]) / original.height,
+    }
+    if actual_occupancy != expected_occupancy:
+        raise ValueError("Crop Manifest actual_occupancy 不一致")
+
+    source_geometry_record = manifest.get("source_geometry")
+    if not isinstance(source_geometry_record, dict):
+        raise ValueError("Crop Manifest 缺少 source_geometry")
+    source_geometry_relative = source_geometry_record.get("path")
+    if not isinstance(source_geometry_relative, str) or not source_geometry_relative:
+        raise ValueError("Crop Manifest source_geometry 路径不合法")
+    source_geometry_path = outputs.run_root / Path(source_geometry_relative)
+    expected_source_geometry_record = {
+        "path": _relative_contract_path(
+            outputs.run_root, source_geometry_path, must_exist=True
+        ),
+        "sha256": _source_digest(source_geometry_path),
+        "semantic_sha256": cropped_geometry.get("source_geometry_sha256"),
+    }
+    if source_geometry_record != expected_source_geometry_record:
+        raise ValueError("Crop Manifest 源几何文件身份不一致")
     expected_records = {
         "cropped_original": _contract_record(
             outputs.run_root, cropped_original_path, "RGB", original.size

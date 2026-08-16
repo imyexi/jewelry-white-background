@@ -1069,6 +1069,18 @@ def write_cropped_contract(tmp_path: Path, module):
     alpha = Image.new("L", (20, 16), 0)
     ImageDraw.Draw(alpha).rectangle((5, 4, 14, 11), fill=255)
     alpha.save(candidate, "PNG")
+    source_geometry_path = geometry_dir / "SYTEST_geometry.json"
+    source_geometry_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "vision-geometry-mask-2.1",
+                "product_id": "SYTEST",
+                "geometry_sha256": "A" * 64,
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     cropped_geometry_path = geometry_dir / "SYTEST_cropped_geometry.json"
     cropped_geometry = {
         "schema_version": "vision-cropped-geometry-1.0",
@@ -1129,6 +1141,11 @@ def write_cropped_contract(tmp_path: Path, module):
         "actual_occupancy": {"width": 0.5, "height": 0.5},
         "source_limited_axes": [],
         "verified_source_border_primitive_ids": [],
+        "source_geometry": {
+            "path": source_geometry_path.relative_to(run_root).as_posix(),
+            "sha256": hashlib.sha256(source_geometry_path.read_bytes()).hexdigest().upper(),
+            "semantic_sha256": "A" * 64,
+        },
         "outputs": {
             "cropped_original": record(original, "RGB"),
             "cropped_detection": record(detection, "L"),
@@ -1194,3 +1211,43 @@ def test_new_mask_entry_rejects_tampered_crop_manifest_before_writing(
     assert not outputs.mask_path.exists()
     assert not outputs.overlay_path.exists()
     assert not outputs.report_path.exists()
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("crop_box", [0, 0, 20, 16]),
+        ("source_size", [41, 32]),
+        ("target_max_occupancy", [1, 999]),
+        ("crop_algorithm", "unknown-crop"),
+    ],
+)
+def test_new_mask_entry_rejects_tampered_crop_contract_fields(
+    tmp_path: Path,
+    field: str,
+    value: object,
+) -> None:
+    module = load_module()
+    inputs = list(write_cropped_contract(tmp_path, module))
+    crop_manifest_path = inputs[5]
+    manifest = json.loads(crop_manifest_path.read_text(encoding="utf-8"))
+    manifest[field] = value
+    crop_manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Crop Manifest"):
+        module.create_background_edit_assets(*inputs)
+
+    assert not inputs[-1].mask_path.exists()
+
+
+def test_new_mask_entry_rejects_changed_source_geometry_file(tmp_path: Path) -> None:
+    module = load_module()
+    inputs = list(write_cropped_contract(tmp_path, module))
+    manifest = json.loads(inputs[5].read_text(encoding="utf-8"))
+    source_geometry = inputs[-1].run_root / manifest["source_geometry"]["path"]
+    source_geometry.write_text("{}", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="源几何|source_geometry"):
+        module.create_background_edit_assets(*inputs)
+
+    assert not inputs[-1].mask_path.exists()

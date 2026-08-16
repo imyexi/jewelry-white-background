@@ -472,6 +472,11 @@ def test_create_geometry_crop_assets_synchronously_crops_four_assets_and_audits(
     assert manifest["cropped_geometry"]["sha256"] == sha256_file(
         outputs.cropped_geometry_path
     )
+    assert manifest["source_geometry"] == {
+        "path": geometry_path.relative_to(outputs.run_root).as_posix(),
+        "sha256": sha256_file(geometry_path),
+        "semantic_sha256": geometry.geometry_sha256,
+    }
 
 
 def test_create_geometry_crop_assets_rejects_manifest_or_existing_output_before_write(

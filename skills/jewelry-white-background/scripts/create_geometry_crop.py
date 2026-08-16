@@ -836,6 +836,11 @@ def create_geometry_crop_assets(
             if limited
         ],
         "verified_source_border_primitive_ids": verified_border_ids,
+        "source_geometry": {
+            "path": _relative_run_path(run_root, geometry_path, must_exist=True),
+            "sha256": _sha256_file(geometry_path),
+            "semantic_sha256": geometry.geometry_sha256,
+        },
         "outputs": {
             "cropped_original": _output_record(
                 run_root,
