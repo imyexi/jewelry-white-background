@@ -1,4 +1,4 @@
 interface:
   display_name: "珠宝白底图生成"
-  short_description: "以飞书最新首张正面图、逐图云端视觉几何和本地 Mask 执行受保护的背景 Edit。"
-  default_prompt: "请使用 $jewelry-white-background 处理飞书最新首张正面图：逐图取得云端视觉几何，调用技能内固定检测工具辅助生成 Mask，以未经增强的原图完成 Mask Edit，保留第一张有效本地结果并添加 Yuan Studio 水印；仅在取得用户授权后追加到主图字段。"
+  short_description: "用 2.1 几何、确定性裁剪、Mask 和两次确认生成并交付珠宝白底图。"
+  default_prompt: "请使用 $jewelry-white-background 处理首张正面图：完成检测、2.1 几何、裁剪和 Mask，在两次确认之间执行 Wawapi Edit 与确定性排版，最终按同一 delivery_id 加水印并向飞书追加。"
