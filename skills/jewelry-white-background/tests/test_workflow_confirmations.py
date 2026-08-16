@@ -5,8 +5,10 @@ import importlib.util
 import json
 import sys
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
+from threading import Barrier
 
 import pytest
 from PIL import Image, ImageDraw
@@ -44,6 +46,269 @@ def canonical_digest(payload: dict[str, object], digest_field: str) -> str:
         separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest().upper()
+
+
+def write_final_review_case(tmp_path: Path):
+    state = load_path("workflow_state_for_final_confirmation", STATE_SCRIPT)
+    module = load_path("workflow_confirmations_for_final_confirmation", CONFIRMATIONS_SCRIPT)
+    identity = state.WorkflowIdentity(
+        product_id="SY1537",
+        base_token="base-token",
+        table_id="table-id",
+        record_id="record-id",
+        front_field_id="front-field-id",
+        target_field_id="target-field-id",
+    )
+    uuids = iter(
+        [
+            uuid.UUID("11111111-1111-1111-1111-111111111111"),
+            uuid.UUID("22222222-2222-2222-2222-222222222222"),
+        ]
+    )
+    paths = state.create_run(tmp_path, identity, now=fixed_now, uuid_factory=lambda: next(uuids))
+    payload = state.load_state(paths)
+    payload["status"] = "layout_completed"
+    payload["state_revision"] = 20
+    state.atomic_replace_json(paths.state_path, payload)
+
+    def artifact(relative: str, content: bytes) -> Path:
+        path = paths.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        return path
+
+    layout = paths.root / "layout/SY1537_3x4_60pct.png"
+    layout.parent.mkdir(parents=True)
+    Image.new("RGB", (1536, 2048), (240, 240, 240)).save(layout, "PNG")
+    assets = module.FinalReviewAssets(
+        mask_confirmation_path=artifact("confirmations/mask_confirmation.json", b"{}\n"),
+        mask_gate_path=artifact("logs/SY1537_mask-gate.confirmed.json", b"{}\n"),
+        edit_result_manifest_path=artifact("manifests/SY1537_edit_result.json", b"{}\n"),
+        layout_path=layout,
+        layout_manifest_path=artifact("manifests/SY1537_layout_manifest.json", b"{}\n"),
+    )
+    return state, module, paths, assets
+
+
+def test_final_confirmation_binds_layout_and_authorizes_side_effects(tmp_path: Path) -> None:
+    state, module, paths, assets = write_final_review_case(tmp_path)
+    module.create_final_review_bundle(paths, assets, now=fixed_now)
+    ids = iter(
+        [
+            uuid.UUID("33333333-3333-3333-3333-333333333333"),
+            uuid.UUID("44444444-4444-4444-4444-444444444444"),
+        ]
+    )
+
+    receipt = module.confirm_final_review(
+        paths, reviewer="session-1", now=fixed_now, uuid_factory=lambda: next(ids)
+    )
+
+    assert receipt["authorization"] == {"watermark": True, "feishu_append": True}
+    assert receipt["delivery_id"] == "44444444444444444444444444444444"
+    assert receipt["layout"]["size"] == [1536, 2048]
+    current = state.load_state(paths)
+    assert current["status"] == "final_confirmed"
+    assert current["delivery"]["delivery_id"] == receipt["delivery_id"]
+    with pytest.raises(FileExistsError):
+        module.confirm_final_review(
+            paths,
+            reviewer="session-2",
+            now=fixed_now,
+            uuid_factory=lambda: uuid.uuid4(),
+        )
+
+
+def test_final_confirmation_invalidates_when_layout_changes(tmp_path: Path) -> None:
+    _state, module, paths, assets = write_final_review_case(tmp_path)
+    module.create_final_review_bundle(paths, assets, now=fixed_now)
+    ids = iter([uuid.uuid4(), uuid.uuid4()])
+    module.confirm_final_review(
+        paths, reviewer="session-1", now=fixed_now, uuid_factory=lambda: next(ids)
+    )
+    assets.layout_path.write_bytes(b"changed")
+
+    gate = module.validate_final_confirmation(paths)
+
+    assert gate.delivery_allowed is False
+    assert "asset_changed" in gate.blockers
+
+
+def test_final_confirmation_receipt_recovers_without_new_delivery_id(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state, module, paths, assets = write_final_review_case(tmp_path)
+    module.create_final_review_bundle(paths, assets, now=fixed_now)
+    ids = iter(
+        [
+            uuid.UUID("33333333-3333-3333-3333-333333333333"),
+            uuid.UUID("44444444-4444-4444-4444-444444444444"),
+        ]
+    )
+    original = module.transition_state
+    monkeypatch.setattr(
+        module,
+        "transition_state",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("simulated crash")),
+    )
+    with pytest.raises(RuntimeError, match="simulated crash"):
+        module.confirm_final_review(
+            paths, reviewer="session-1", now=fixed_now, uuid_factory=lambda: next(ids)
+        )
+    monkeypatch.setattr(module, "transition_state", original)
+
+    gate = module.validate_final_confirmation(paths, recover_state=True, now=fixed_now)
+
+    assert gate.delivery_allowed is True
+    assert state.load_state(paths)["delivery"]["delivery_id"] == (
+        "44444444444444444444444444444444"
+    )
+
+
+def test_final_review_bundle_recovers_after_publish_before_state_transition(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state, module, paths, assets = write_final_review_case(tmp_path)
+    original = module.transition_state
+    monkeypatch.setattr(
+        module,
+        "transition_state",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("simulated crash")),
+    )
+    with pytest.raises(RuntimeError, match="simulated crash"):
+        module.create_final_review_bundle(paths, assets, now=fixed_now)
+    monkeypatch.setattr(module, "transition_state", original)
+
+    recovered = module.create_final_review_bundle(paths, assets, now=fixed_now)
+
+    assert recovered["schema_version"] == "final-review-bundle-1.0"
+    assert state.load_state(paths)["status"] == "awaiting_final_confirmation"
+
+
+def test_concurrent_final_bundle_recovery_is_idempotent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state, module, paths, assets = write_final_review_case(tmp_path)
+    original = module.transition_state
+    monkeypatch.setattr(
+        module,
+        "transition_state",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("simulated crash")),
+    )
+    with pytest.raises(RuntimeError, match="simulated crash"):
+        module.create_final_review_bundle(paths, assets, now=fixed_now)
+
+    barrier = Barrier(2)
+
+    def synchronized_transition(*args, **kwargs):
+        if kwargs.get("next_status") == "awaiting_final_confirmation":
+            barrier.wait()
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(module, "transition_state", synchronized_transition)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(
+            executor.map(
+                lambda _index: module.create_final_review_bundle(
+                    paths, assets, now=fixed_now
+                ),
+                range(2),
+            )
+        )
+
+    assert [item["schema_version"] for item in results] == [
+        "final-review-bundle-1.0",
+        "final-review-bundle-1.0",
+    ]
+    assert state.load_state(paths)["status"] == "awaiting_final_confirmation"
+
+
+def test_concurrent_valid_final_confirmation_recovery_is_idempotent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state, module, paths, assets = write_final_review_case(tmp_path)
+    module.create_final_review_bundle(paths, assets, now=fixed_now)
+    ids = iter(
+        [
+            uuid.UUID("33333333-3333-3333-3333-333333333333"),
+            uuid.UUID("44444444-4444-4444-4444-444444444444"),
+        ]
+    )
+    original = module.transition_state
+    monkeypatch.setattr(
+        module,
+        "transition_state",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("simulated crash")),
+    )
+    with pytest.raises(RuntimeError, match="simulated crash"):
+        module.confirm_final_review(
+            paths, reviewer="session-1", now=fixed_now, uuid_factory=lambda: next(ids)
+        )
+
+    barrier = Barrier(2)
+
+    def synchronized_transition(*args, **kwargs):
+        if kwargs.get("next_status") == "final_confirmed":
+            barrier.wait()
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(module, "transition_state", synchronized_transition)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        gates = list(
+            executor.map(
+                lambda _index: module.validate_final_confirmation(
+                    paths, recover_state=True, now=fixed_now
+                ),
+                range(2),
+            )
+        )
+
+    assert [gate.delivery_allowed for gate in gates] == [True, True]
+    assert state.load_state(paths)["status"] == "final_confirmed"
+
+
+def test_concurrent_invalid_final_confirmation_recovery_is_idempotent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state, module, paths, assets = write_final_review_case(tmp_path)
+    module.create_final_review_bundle(paths, assets, now=fixed_now)
+    receipt_path = paths.root / "confirmations" / "final_confirmation.json"
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text('{"schema_version":"broken"}', encoding="utf-8")
+    original = module.transition_state
+    barrier = Barrier(2)
+
+    def synchronized_transition(*args, **kwargs):
+        if kwargs.get("next_status") == "final_invalid":
+            barrier.wait()
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(module, "transition_state", synchronized_transition)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        gates = list(
+            executor.map(
+                lambda _index: module.validate_final_confirmation(
+                    paths, recover_state=True, now=fixed_now
+                ),
+                range(2),
+            )
+        )
+
+    assert [gate.delivery_allowed for gate in gates] == [False, False]
+    assert state.load_state(paths)["status"] == "final_invalid"
+
+
+def test_invalid_existing_final_receipt_enters_final_invalid(tmp_path: Path) -> None:
+    state, module, paths, assets = write_final_review_case(tmp_path)
+    module.create_final_review_bundle(paths, assets, now=fixed_now)
+    receipt_path = paths.root / "confirmations" / "final_confirmation.json"
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text('{"schema_version":"broken"}', encoding="utf-8")
+
+    gate = module.validate_final_confirmation(paths, recover_state=True, now=fixed_now)
+
+    assert gate.delivery_allowed is False
+    assert state.load_state(paths)["status"] == "final_invalid"
 
 
 def test_confirmation_module_ignores_preloaded_root_mask_wrapper(

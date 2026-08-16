@@ -22,6 +22,7 @@ if _SCRIPT_DIRECTORY not in sys.path:
 
 from workflow_state import (  # noqa: E402
     RunPaths,
+    StateConflict,
     atomic_create_json,
     atomic_replace_json,
     load_state,
@@ -82,6 +83,22 @@ class MaskConfirmationGate:
     report_path: Path
 
 
+@dataclass(frozen=True)
+class FinalReviewAssets:
+    mask_confirmation_path: Path
+    mask_gate_path: Path
+    edit_result_manifest_path: Path
+    layout_path: Path
+    layout_manifest_path: Path
+
+
+@dataclass(frozen=True)
+class FinalConfirmationGate:
+    delivery_allowed: bool
+    blockers: tuple[str, ...]
+    receipt_path: Path
+
+
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -92,6 +109,34 @@ def _format_utc(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat(timespec="milliseconds").replace(
         "+00:00", "Z"
     )
+
+
+def _recover_transition_idempotently(
+    paths: RunPaths,
+    *,
+    expected_status: str,
+    expected_revision: int,
+    next_status: str,
+    event: str,
+    mutate: Callable[[dict[str, Any]], None] | None,
+    now: Callable[[], datetime],
+    accepted_statuses: set[str] | None = None,
+) -> dict[str, Any]:
+    try:
+        return transition_state(
+            paths,
+            expected_status=expected_status,
+            expected_revision=expected_revision,
+            next_status=next_status,
+            event=event,
+            mutate=mutate,
+            now=now,
+        )
+    except StateConflict:
+        latest = load_state(paths)
+        if latest.get("status") in (accepted_statuses or {next_status}):
+            return latest
+        raise
 
 
 def _sha256(path: Path) -> str:
@@ -549,10 +594,271 @@ def validate_mask_confirmation(
     return MaskConfirmationGate(allowed, tuple(blockers), report_path)
 
 
+def _final_bundle_path(paths: RunPaths) -> Path:
+    return paths.manifests_dir / "final_review_bundle.json"
+
+
+def _final_receipt_path(paths: RunPaths) -> Path:
+    return paths.root / "confirmations" / "final_confirmation.json"
+
+
+def _final_record(paths: RunPaths, path: Path, *, image: bool = False) -> dict[str, Any]:
+    record = {"path": _relative_path(paths.root, path), "sha256": _sha256(path)}
+    if image:
+        with Image.open(path) as opened:
+            opened.load()
+            record["size"] = list(opened.size)
+    return record
+
+
+def create_final_review_bundle(
+    paths: RunPaths,
+    assets: FinalReviewAssets,
+    *,
+    now: Callable[[], datetime] = _utc_now,
+) -> dict[str, Any]:
+    paths = _coerce_paths(paths)
+    state = load_state(paths)
+    if state.get("status") not in {"layout_completed", "awaiting_final_confirmation"}:
+        raise ValueError(
+            "只有 layout_completed 或 awaiting_final_confirmation 状态可以创建最终 review bundle"
+        )
+    bundle = {
+        "schema_version": "final-review-bundle-1.0",
+        **{key: state[key] for key in ("run_id", "product_id", "base_token", "table_id", "record_id", "target_field_id")},
+        "assets": {
+            "mask_confirmation": _final_record(paths, assets.mask_confirmation_path),
+            "mask_gate": _final_record(paths, assets.mask_gate_path),
+            "edit_result_manifest": _final_record(paths, assets.edit_result_manifest_path),
+            "layout": _final_record(paths, assets.layout_path, image=True),
+            "layout_manifest": _final_record(paths, assets.layout_manifest_path),
+        },
+        "created_at": _format_utc(now()),
+    }
+    path = _final_bundle_path(paths)
+    if path.exists():
+        existing = _load_json(path, "Final review bundle")
+        comparable_fields = {
+            "schema_version",
+            "run_id",
+            "product_id",
+            "base_token",
+            "table_id",
+            "record_id",
+            "target_field_id",
+            "assets",
+        }
+        if any(existing.get(key) != bundle.get(key) for key in comparable_fields):
+            raise ValueError("已存在的最终 review bundle 与当前资产冲突")
+        for record in existing["assets"].values():
+            asset = _resolve_record_path(paths.root, record.get("path"))
+            if _sha256(asset) != record.get("sha256"):
+                raise ValueError("asset_changed")
+        layout_record = existing["assets"]["layout"]
+        with Image.open(_resolve_record_path(paths.root, layout_record["path"])) as opened:
+            opened.load()
+            if list(opened.size) != layout_record.get("size"):
+                raise ValueError("asset_changed")
+        bundle = existing
+    else:
+        atomic_create_json(path, bundle)
+
+    def bind(payload: dict[str, Any]) -> None:
+        payload.setdefault("reviews", {})["final_bundle"] = {
+            "path": _relative_path(paths.root, path),
+            "sha256": _sha256(path),
+        }
+
+    if state.get("status") == "layout_completed":
+        recovered_state = _recover_transition_idempotently(
+            paths,
+            expected_status="layout_completed",
+            expected_revision=int(state["state_revision"]),
+            next_status="awaiting_final_confirmation",
+            event="final_review_bundle_created",
+            mutate=bind,
+            now=now,
+            accepted_statuses={
+                "awaiting_final_confirmation",
+                "final_confirmed",
+                "watermarking",
+                "upload_ready",
+                "uploading",
+                "completed",
+                "watermark_failed",
+                "upload_failed",
+                "upload_unknown",
+                "final_invalid",
+            },
+        )
+        if recovered_state.get("reviews", {}).get("final_bundle") != {
+            "path": _relative_path(paths.root, path),
+            "sha256": _sha256(path),
+        }:
+            raise ValueError("最终 review bundle 状态绑定不一致")
+    elif state.get("reviews", {}).get("final_bundle") != {
+        "path": _relative_path(paths.root, path),
+        "sha256": _sha256(path),
+    }:
+        raise ValueError("最终 review bundle 状态绑定不一致")
+    return bundle
+
+
+def _load_final_bundle(paths: RunPaths) -> tuple[Path, dict[str, Any]]:
+    path = _final_bundle_path(paths)
+    bundle = _load_json(path, "Final review bundle")
+    state = load_state(paths)
+    if state.get("reviews", {}).get("final_bundle") != {"path": _relative_path(paths.root, path), "sha256": _sha256(path)}:
+        raise ValueError("bundle_changed")
+    for key in ("run_id", "product_id", "base_token", "table_id", "record_id", "target_field_id"):
+        if bundle.get(key) != state.get(key):
+            raise ValueError("bundle_identity_changed")
+    records = bundle.get("assets")
+    if not isinstance(records, dict) or set(records) != {"mask_confirmation", "mask_gate", "edit_result_manifest", "layout", "layout_manifest"}:
+        raise ValueError("bundle_invalid")
+    for record in records.values():
+        asset = _resolve_record_path(paths.root, record.get("path"))
+        if _sha256(asset) != record.get("sha256"):
+            raise ValueError("asset_changed")
+    layout_record = records["layout"]
+    with Image.open(_resolve_record_path(paths.root, layout_record["path"])) as opened:
+        opened.load()
+        if list(opened.size) != layout_record.get("size"):
+            raise ValueError("asset_changed")
+    return path, bundle
+
+
+def validate_final_confirmation(
+    paths: RunPaths,
+    *,
+    recover_state: bool = True,
+    now: Callable[[], datetime] = _utc_now,
+) -> FinalConfirmationGate:
+    paths = _coerce_paths(paths)
+    blockers: list[str] = []
+    receipt_path = _final_receipt_path(paths)
+    try:
+        bundle_path, bundle = _load_final_bundle(paths)
+        receipt = _load_json(receipt_path, "Final confirmation")
+        state = load_state(paths)
+        if receipt.get("schema_version") != "final-confirmation-1.0":
+            blockers.append("confirmation_invalid")
+        for name in ("confirmation_id", "delivery_id"):
+            value = receipt.get(name)
+            if not isinstance(value, str) or len(value) != 32 or any(character not in "0123456789abcdef" for character in value):
+                blockers.append("confirmation_invalid")
+        for key in ("run_id", "product_id", "base_token", "table_id", "record_id", "target_field_id"):
+            if receipt.get(key) != bundle.get(key) or receipt.get(key) != state.get(key):
+                blockers.append("confirmation_invalid")
+        if receipt.get("decision") != "confirmed" or receipt.get("authorization") != {"watermark": True, "feishu_append": True}:
+            blockers.append("confirmation_invalid")
+        if receipt.get("review_bundle_path") != _relative_path(paths.root, bundle_path) or receipt.get("review_bundle_sha256") != _sha256(bundle_path):
+            blockers.append("bundle_changed")
+        if receipt.get("layout") != bundle["assets"]["layout"] or receipt.get("layout_manifest") != bundle["assets"]["layout_manifest"]:
+            blockers.append("confirmation_invalid")
+        if state.get("status") == "final_confirmed":
+            if state.get("receipts", {}).get("final") != {"path": _relative_path(paths.root, receipt_path), "sha256": _sha256(receipt_path)}:
+                blockers.append("confirmation_invalid")
+            if state.get("delivery", {}).get("delivery_id") != receipt.get("delivery_id"):
+                blockers.append("confirmation_invalid")
+    except ValueError as exc:
+        blocker = str(exc)
+        blockers.append(blocker if blocker in {"asset_changed", "bundle_changed", "bundle_identity_changed"} else "confirmation_invalid")
+    except (OSError, TypeError, KeyError, json.JSONDecodeError):
+        blockers.append("confirmation_invalid")
+    blockers = list(dict.fromkeys(blockers))
+    if blockers and recover_state and receipt_path.exists():
+        state = load_state(paths)
+        if state.get("status") in {"awaiting_final_confirmation", "final_confirmed"}:
+            _recover_transition_idempotently(
+                paths,
+                expected_status=state["status"],
+                expected_revision=int(state["state_revision"]),
+                next_status="final_invalid",
+                event="final_confirmation_invalidated",
+                mutate=None,
+                now=now,
+                accepted_statuses={"final_invalid"},
+            )
+    elif not blockers and recover_state:
+        state = load_state(paths)
+        if state.get("status") == "awaiting_final_confirmation":
+            def bind(payload: dict[str, Any]) -> None:
+                payload["receipts"]["final"] = {"path": _relative_path(paths.root, receipt_path), "sha256": _sha256(receipt_path)}
+                payload["delivery"]["delivery_id"] = receipt["delivery_id"]
+            recovered_state = _recover_transition_idempotently(
+                paths,
+                expected_status="awaiting_final_confirmation",
+                expected_revision=int(state["state_revision"]),
+                next_status="final_confirmed",
+                event="final_confirmation_recovered",
+                mutate=bind,
+                now=now,
+                accepted_statuses={
+                    "final_confirmed",
+                    "watermarking",
+                    "upload_ready",
+                    "uploading",
+                    "completed",
+                    "watermark_failed",
+                    "upload_failed",
+                    "upload_unknown",
+                },
+            )
+            if recovered_state.get("receipts", {}).get("final") != {
+                "path": _relative_path(paths.root, receipt_path),
+                "sha256": _sha256(receipt_path),
+            } or recovered_state.get("delivery", {}).get("delivery_id") != receipt.get(
+                "delivery_id"
+            ):
+                raise ValueError("最终确认状态绑定不一致")
+    return FinalConfirmationGate(not blockers, tuple(blockers), receipt_path)
+
+
+def confirm_final_review(
+    paths: RunPaths,
+    *,
+    reviewer: str,
+    now: Callable[[], datetime] = _utc_now,
+    uuid_factory: Callable[[], uuid.UUID] = uuid.uuid4,
+) -> dict[str, Any]:
+    paths = _coerce_paths(paths)
+    if not isinstance(reviewer, str) or not reviewer.strip():
+        raise ValueError("确认人不能为空")
+    bundle_path, bundle = _load_final_bundle(paths)
+    confirmation_id, delivery_id = uuid_factory(), uuid_factory()
+    if not isinstance(confirmation_id, uuid.UUID) or not isinstance(delivery_id, uuid.UUID):
+        raise TypeError("uuid_factory 必须返回 UUID")
+    receipt = {
+        "schema_version": "final-confirmation-1.0",
+        "confirmation_id": confirmation_id.hex,
+        "delivery_id": delivery_id.hex,
+        **{key: bundle[key] for key in ("run_id", "product_id", "base_token", "table_id", "record_id", "target_field_id")},
+        "decision": "confirmed",
+        "confirmed_at": _format_utc(now()),
+        "confirmed_by": reviewer.strip(),
+        "review_bundle_path": _relative_path(paths.root, bundle_path),
+        "review_bundle_sha256": _sha256(bundle_path),
+        "layout": bundle["assets"]["layout"],
+        "layout_manifest": bundle["assets"]["layout_manifest"],
+        "authorization": {"watermark": True, "feishu_append": True},
+    }
+    atomic_create_json(_final_receipt_path(paths), receipt)
+    gate = validate_final_confirmation(paths, recover_state=True, now=now)
+    if not gate.delivery_allowed:
+        raise ValueError("最终确认后门禁未通过")
+    return receipt
+
+
 __all__ = [
+    "FinalConfirmationGate",
+    "FinalReviewAssets",
     "MaskConfirmationGate",
     "MaskReviewAssets",
     "confirm_mask_review",
+    "confirm_final_review",
+    "create_final_review_bundle",
     "create_mask_review_bundle",
     "validate_mask_confirmation",
+    "validate_final_confirmation",
 ]

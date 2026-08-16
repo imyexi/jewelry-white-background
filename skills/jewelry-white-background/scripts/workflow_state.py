@@ -81,8 +81,8 @@ ALLOWED_TRANSITIONS = {
     },
     "final_confirmed": {"watermarking", "final_invalid", "watermark_failed"},
     "watermarking": {"upload_ready", "watermark_failed"},
-    "upload_ready": {"uploading", "completed", "upload_failed", "upload_unknown"},
-    "uploading": {"completed", "upload_failed", "upload_unknown"},
+    "upload_ready": {"uploading", "completed", "watermark_failed", "upload_failed", "upload_unknown"},
+    "uploading": {"completed", "watermark_failed", "upload_failed", "upload_unknown"},
 }
 
 
