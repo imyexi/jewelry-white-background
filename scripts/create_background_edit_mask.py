@@ -26,7 +26,7 @@ MAX_IMAGE_PIXELS = _MODULE.MAX_IMAGE_PIXELS
 load_vision_geometry = _MODULE.load_vision_geometry
 rasterize_vision_geometry = _MODULE.rasterize_vision_geometry
 refine_candidate_boundary = _MODULE.refine_candidate_boundary
-create_background_edit_assets = _MODULE.create_background_edit_assets
+create_background_edit_assets = _MODULE.create_background_edit_assets_legacy_read_only
 create_mask = _MODULE.create_mask
 main = _MODULE.main
 

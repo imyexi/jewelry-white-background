@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import inspect
 import json
 import struct
 import subprocess
@@ -127,7 +128,7 @@ def add_review_from_draft(
     """先生成待审资产，再把精确几何与 Mask 身份写入审核。"""
     profile_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     report_path = tmp_path / "draft-report.json"
-    module.create_background_edit_assets(
+    module.create_background_edit_assets_legacy_read_only(
         source,
         tmp_path / "draft-prepared.png",
         tmp_path / "draft-mask.png",
@@ -337,7 +338,7 @@ def test_assets_reject_source_identity_mismatch_before_writing(
     profile_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
     with pytest.raises(ValueError, match={"sha": "SHA-256", "size": "尺寸", "product": "商品编号"}[mismatch]):
-        module.create_background_edit_assets(
+        module.create_background_edit_assets_legacy_read_only(
             source,
             tmp_path / "prepared.png",
             tmp_path / "mask.png",
@@ -366,7 +367,7 @@ def test_assets_keep_levels_in_memory_and_edit_image_pixel_identical(
     overlay = tmp_path / "overlay.png"
     report = tmp_path / "report.json"
 
-    assessment = module.create_background_edit_assets(
+    assessment = module.create_background_edit_assets_legacy_read_only(
         source,
         prepared,
         mask,
@@ -421,7 +422,7 @@ def test_palette_transparency_is_composited_over_white_for_prepared_image(
     write_profile(profile_path, source, digest, palette.size)
     prepared = tmp_path / "prepared.png"
 
-    module.create_background_edit_assets(
+    module.create_background_edit_assets_legacy_read_only(
         source,
         prepared,
         tmp_path / "mask.png",
@@ -445,7 +446,7 @@ def test_unreviewed_geometry_cannot_enable_automatic_wawapi_edit(tmp_path: Path)
     profile = tmp_path / "profile.json"
     write_profile(profile, source, digest, image.size)
 
-    assessment = module.create_background_edit_assets(
+    assessment = module.create_background_edit_assets_legacy_read_only(
         source,
         tmp_path / "prepared.png",
         tmp_path / "mask.png",
@@ -476,7 +477,7 @@ def test_approved_mask_review_is_bound_to_source_and_auditable(tmp_path: Path) -
         resolved_uncertain_regions=["cord-border"],
     )
 
-    assessment = module.create_background_edit_assets(
+    assessment = module.create_background_edit_assets_legacy_read_only(
         source,
         tmp_path / "prepared.png",
         tmp_path / "mask.png",
@@ -522,7 +523,7 @@ def test_approved_review_is_invalidated_when_geometry_changes(tmp_path: Path) ->
     payload["primitives"][0]["points"][0] = [3600, 3400]
     profile.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
-    assessment = module.create_background_edit_assets(
+    assessment = module.create_background_edit_assets_legacy_read_only(
         source,
         tmp_path / "changed-prepared.png",
         tmp_path / "changed-mask.png",
@@ -557,7 +558,7 @@ def test_approved_review_is_invalidated_when_uncertainty_definition_changes(
     payload["uncertain_regions"][0]["bbox"] = [4700, 0, 5300, 500]
     profile.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
-    assessment = module.create_background_edit_assets(
+    assessment = module.create_background_edit_assets_legacy_read_only(
         source,
         tmp_path / "changed-prepared.png",
         tmp_path / "changed-mask.png",
@@ -634,7 +635,7 @@ def test_approved_review_must_explicitly_resolve_each_uncertain_region(
     ]
     add_review_from_draft(module, tmp_path, source, profile, payload)
 
-    assessment = module.create_background_edit_assets(
+    assessment = module.create_background_edit_assets_legacy_read_only(
         source,
         tmp_path / "prepared.png",
         tmp_path / "mask.png",
@@ -689,7 +690,7 @@ def test_declared_border_product_must_really_touch_canvas(tmp_path: Path) -> Non
     payload["uncertain_regions"] = []
     add_review_from_draft(module, tmp_path, source, profile, payload)
 
-    assessment = module.create_background_edit_assets(
+    assessment = module.create_background_edit_assets_legacy_read_only(
         source,
         tmp_path / "prepared.png",
         tmp_path / "mask.png",
@@ -732,7 +733,7 @@ def test_declared_border_primitive_does_not_cover_other_undeclared_contacts(
     payload["uncertain_regions"] = []
     add_review_from_draft(module, tmp_path, source, profile, payload)
 
-    assessment = module.create_background_edit_assets(
+    assessment = module.create_background_edit_assets_legacy_read_only(
         source,
         tmp_path / "prepared.png",
         tmp_path / "mask.png",
@@ -852,7 +853,7 @@ def test_approved_review_blocks_extreme_product_protection_ratio(tmp_path: Path)
     payload["uncertain_regions"] = []
     add_review_from_draft(module, tmp_path, source, profile, payload)
 
-    assessment = module.create_background_edit_assets(
+    assessment = module.create_background_edit_assets_legacy_read_only(
         source,
         tmp_path / "prepared.png",
         tmp_path / "mask.png",
@@ -889,7 +890,7 @@ def test_approved_review_blocks_near_empty_product_protection_ratio(
     payload["uncertain_regions"] = []
     add_review_from_draft(module, tmp_path, source, profile, payload)
 
-    assessment = module.create_background_edit_assets(
+    assessment = module.create_background_edit_assets_legacy_read_only(
         source,
         tmp_path / "prepared.png",
         tmp_path / "mask.png",
@@ -986,7 +987,7 @@ def test_assets_reject_path_aliases_before_writing(tmp_path: Path) -> None:
     write_profile(profile, source, digest, (180, 160))
 
     with pytest.raises(ValueError, match="路径"):
-        module.create_background_edit_assets(
+        module.create_background_edit_assets_legacy_read_only(
             source,
             source,
             tmp_path / "mask.png",
@@ -1048,3 +1049,148 @@ def test_formal_module_has_no_ring_inference_or_annulus_fallback() -> None:
     assert "_ring_band" not in source
     assert "outer-rx" not in source
     assert "inner-rx" not in source
+
+
+def write_cropped_contract(tmp_path: Path, module):
+    run_root = tmp_path / "SYTEST" / "run-1"
+    cropped = run_root / "cropped"
+    geometry_dir = run_root / "geometry"
+    manifests = run_root / "manifests"
+    cropped.mkdir(parents=True)
+    geometry_dir.mkdir()
+    manifests.mkdir()
+    original = cropped / "SYTEST_original.png"
+    detection = cropped / "SYTEST_detection.png"
+    local_detection = cropped / "SYTEST_local_detection.png"
+    candidate = cropped / "SYTEST_geometry_candidate_alpha.png"
+    Image.new("RGB", (20, 16), (230, 232, 234)).save(original, "PNG")
+    Image.new("L", (20, 16), 128).save(detection, "PNG")
+    Image.new("L", (20, 16), 140).save(local_detection, "PNG")
+    alpha = Image.new("L", (20, 16), 0)
+    ImageDraw.Draw(alpha).rectangle((5, 4, 14, 11), fill=255)
+    alpha.save(candidate, "PNG")
+    cropped_geometry_path = geometry_dir / "SYTEST_cropped_geometry.json"
+    cropped_geometry = {
+        "schema_version": "vision-cropped-geometry-1.0",
+        "product_id": "SYTEST",
+        "source_geometry_sha256": "A" * 64,
+        "source_sha256": "B" * 64,
+        "detection_image_sha256": "C" * 64,
+        "source_size": [40, 32],
+        "crop_box": [10, 8, 30, 24],
+        "crop_size": [20, 16],
+        "coordinate_space": "crop-pixel",
+        "coordinate_bounds": [0, 0, 20, 16],
+        "primitives": [
+            {
+                "id": "product",
+                "type": "polygon",
+                "semantic": "product",
+                "points": [[5, 4], [14, 4], [14, 11], [5, 11]],
+                "touches_border": False,
+            }
+        ],
+        "uncertain_regions": [],
+    }
+    encoded = json.dumps(
+        cropped_geometry,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    cropped_geometry["cropped_geometry_sha256"] = hashlib.sha256(encoded).hexdigest().upper()
+    cropped_geometry_path.write_text(
+        json.dumps(cropped_geometry, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    crop_manifest_path = manifests / "SYTEST_crop_manifest.json"
+
+    def record(path: Path, mode: str):
+        return {
+            "path": path.relative_to(run_root).as_posix(),
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest().upper(),
+            "size": [20, 16],
+            "mode": mode,
+        }
+
+    manifest = {
+        "schema_version": "geometry-crop-manifest-1.0",
+        "product_id": "SYTEST",
+        "source_geometry_sha256": "A" * 64,
+        "source_sha256": "B" * 64,
+        "detection_image_sha256": "C" * 64,
+        "local_detection_image_sha256": "D" * 64,
+        "detection_manifest_sha256": "E" * 64,
+        "source_size": [40, 32],
+        "content_box": [15, 12, 25, 20],
+        "crop_box": [10, 8, 30, 24],
+        "crop_size": [20, 16],
+        "target_max_occupancy": [77, 100],
+        "actual_occupancy": {"width": 0.5, "height": 0.5},
+        "source_limited_axes": [],
+        "verified_source_border_primitive_ids": [],
+        "outputs": {
+            "cropped_original": record(original, "RGB"),
+            "cropped_detection": record(detection, "L"),
+            "cropped_local_detection": record(local_detection, "L"),
+            "candidate_alpha": record(candidate, "L"),
+        },
+        "cropped_geometry": {
+            "path": cropped_geometry_path.relative_to(run_root).as_posix(),
+            "sha256": hashlib.sha256(cropped_geometry_path.read_bytes()).hexdigest().upper(),
+            "semantic_sha256": cropped_geometry["cropped_geometry_sha256"],
+        },
+        "crop_algorithm": "geometry-crop-77-over-100-v1",
+    }
+    crop_manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    outputs = module.MaskOutputPaths(
+        run_root=run_root,
+        mask_path=run_root / "mask" / "SYTEST_product-protection-mask.png",
+        overlay_path=run_root / "mask" / "SYTEST_editable-overlay.png",
+        report_path=run_root / "logs" / "SYTEST_mask-assessment.draft.json",
+    )
+    return (
+        original,
+        detection,
+        local_detection,
+        candidate,
+        cropped_geometry_path,
+        crop_manifest_path,
+        outputs,
+    )
+
+
+def test_new_mask_entry_accepts_only_cropped_contract_inputs() -> None:
+    module = load_module()
+
+    assert list(inspect.signature(module.create_background_edit_assets).parameters) == [
+        "cropped_original_path",
+        "cropped_detection_path",
+        "cropped_local_detection_path",
+        "candidate_alpha_path",
+        "cropped_geometry_path",
+        "crop_manifest_path",
+        "outputs",
+    ]
+
+
+def test_new_mask_entry_rejects_tampered_crop_manifest_before_writing(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    inputs = list(write_cropped_contract(tmp_path, module))
+    crop_manifest_path = inputs[5]
+    manifest = json.loads(crop_manifest_path.read_text(encoding="utf-8"))
+    manifest["outputs"]["candidate_alpha"]["sha256"] = "F" * 64
+    crop_manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Crop Manifest|candidate"):
+        module.create_background_edit_assets(*inputs)
+
+    outputs = inputs[-1]
+    assert not outputs.mask_path.exists()
+    assert not outputs.overlay_path.exists()
+    assert not outputs.report_path.exists()

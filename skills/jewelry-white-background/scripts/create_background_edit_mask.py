@@ -25,6 +25,8 @@ from prepare_mask_detection_images import (  # noqa: E402
     percentile as _percentile,
     prepare_mask_detection_images,
 )
+from create_geometry_crop import rasterize_cropped_geometry  # noqa: E402
+from workflow_state import atomic_create_bytes, atomic_create_json  # noqa: E402
 
 
 MAX_IMAGE_PIXELS = 20_000_000
@@ -99,6 +101,14 @@ class MaskAssessment:
     mask_review_status: str
     unresolved_uncertain_region_ids: tuple[str, ...]
     declared_border_contact_missing_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class MaskOutputPaths:
+    run_root: Path
+    mask_path: Path
+    overlay_path: Path
+    report_path: Path
 
 
 def _validate_image_size(size: tuple[int, int]) -> None:
@@ -664,7 +674,7 @@ def _assessment(
     )
 
 
-def create_background_edit_assets(
+def create_background_edit_assets_legacy_read_only(
     input_path: str | Path,
     image_output_path: str | Path,
     mask_output_path: str | Path,
@@ -721,6 +731,216 @@ def create_background_edit_assets(
     return assessment
 
 
+def _relative_contract_path(run_root: Path, path: Path, *, must_exist: bool) -> str:
+    root = run_root.resolve()
+    resolved = path.resolve(strict=must_exist)
+    try:
+        return resolved.relative_to(root).as_posix()
+    except ValueError as exc:
+        raise ValueError("Mask 输入输出必须位于当前运行目录") from exc
+
+
+def _load_contract_image(path: Path, mode: str, size: tuple[int, int] | None = None) -> Image.Image:
+    with Image.open(path) as opened:
+        opened.load()
+        if opened.format != "PNG" or opened.mode != mode:
+            raise ValueError(f"{path.name} 必须是真实 {mode} PNG")
+        _validate_image_size(opened.size)
+        if size is not None and opened.size != size:
+            raise ValueError("裁剪图片与候选 Alpha 尺寸必须一致")
+        return opened.copy()
+
+
+def _contract_record(run_root: Path, path: Path, mode: str, size: tuple[int, int]) -> dict[str, Any]:
+    return {
+        "path": _relative_contract_path(run_root, path, must_exist=True),
+        "sha256": _source_digest(path),
+        "size": list(size),
+        "mode": mode,
+    }
+
+
+def _validate_cropped_inputs(
+    cropped_original_path: Path,
+    cropped_detection_path: Path,
+    cropped_local_detection_path: Path,
+    candidate_alpha_path: Path,
+    cropped_geometry_path: Path,
+    crop_manifest_path: Path,
+    outputs: MaskOutputPaths,
+) -> tuple[Image.Image, Image.Image, Image.Image, Image.Image, dict[str, Any], dict[str, Any]]:
+    inputs = (
+        cropped_original_path,
+        cropped_detection_path,
+        cropped_local_detection_path,
+        candidate_alpha_path,
+        cropped_geometry_path,
+        crop_manifest_path,
+    )
+    published = (outputs.mask_path, outputs.overlay_path, outputs.report_path)
+    for path in inputs:
+        _relative_contract_path(outputs.run_root, path, must_exist=True)
+    for path in published:
+        _relative_contract_path(outputs.run_root, path, must_exist=False)
+        if path.exists():
+            raise FileExistsError(path)
+    if len({path.resolve() for path in (*inputs, *published)}) != 9:
+        raise ValueError("Mask 输入输出路径必须互不相同")
+
+    original = _load_contract_image(cropped_original_path, "RGB")
+    detection = _load_contract_image(cropped_detection_path, "L", original.size)
+    local_detection = _load_contract_image(
+        cropped_local_detection_path, "L", original.size
+    )
+    candidate = _load_contract_image(candidate_alpha_path, "L", original.size)
+    if any(value not in {0, 255} for value in candidate.tobytes()):
+        raise ValueError("candidate Alpha 只能包含 0 和 255")
+
+    cropped_geometry = _require_mapping(
+        json.loads(cropped_geometry_path.read_text(encoding="utf-8")),
+        "裁剪几何",
+    )
+    audited = rasterize_cropped_geometry(cropped_geometry)
+    if audited.size != candidate.size or audited.tobytes() != candidate.tobytes():
+        raise ValueError("裁剪几何与 candidate Alpha 不一致")
+
+    manifest = _require_mapping(
+        json.loads(crop_manifest_path.read_text(encoding="utf-8")),
+        "Crop Manifest",
+    )
+    if manifest.get("schema_version") != "geometry-crop-manifest-1.0":
+        raise ValueError("Crop Manifest schema 不受支持")
+    if manifest.get("product_id") != cropped_geometry.get("product_id"):
+        raise ValueError("Crop Manifest 商品身份不一致")
+    if manifest.get("crop_size") != list(original.size):
+        raise ValueError("Crop Manifest 裁剪尺寸不一致")
+    expected_records = {
+        "cropped_original": _contract_record(
+            outputs.run_root, cropped_original_path, "RGB", original.size
+        ),
+        "cropped_detection": _contract_record(
+            outputs.run_root, cropped_detection_path, "L", original.size
+        ),
+        "cropped_local_detection": _contract_record(
+            outputs.run_root, cropped_local_detection_path, "L", original.size
+        ),
+        "candidate_alpha": _contract_record(
+            outputs.run_root, candidate_alpha_path, "L", original.size
+        ),
+    }
+    records = manifest.get("outputs")
+    if not isinstance(records, dict):
+        raise ValueError("Crop Manifest 缺少 outputs")
+    for name, expected in expected_records.items():
+        if records.get(name) != expected:
+            raise ValueError(f"Crop Manifest 的 {name} 记录不一致")
+    geometry_record = manifest.get("cropped_geometry")
+    expected_geometry_record = {
+        "path": _relative_contract_path(
+            outputs.run_root, cropped_geometry_path, must_exist=True
+        ),
+        "sha256": _source_digest(cropped_geometry_path),
+        "semantic_sha256": cropped_geometry.get("cropped_geometry_sha256"),
+    }
+    if geometry_record != expected_geometry_record:
+        raise ValueError("Crop Manifest 的 cropped_geometry 记录不一致")
+    if manifest.get("source_geometry_sha256") != cropped_geometry.get(
+        "source_geometry_sha256"
+    ) or manifest.get("source_sha256") != cropped_geometry.get("source_sha256"):
+        raise ValueError("Crop Manifest 与裁剪几何源身份不一致")
+    return (
+        original,
+        detection,
+        local_detection,
+        candidate,
+        cropped_geometry,
+        manifest,
+    )
+
+
+def create_background_edit_assets(
+    cropped_original_path: str | Path,
+    cropped_detection_path: str | Path,
+    cropped_local_detection_path: str | Path,
+    candidate_alpha_path: str | Path,
+    cropped_geometry_path: str | Path,
+    crop_manifest_path: str | Path,
+    outputs: MaskOutputPaths,
+) -> MaskAssessment:
+    paths = tuple(
+        Path(path)
+        for path in (
+            cropped_original_path,
+            cropped_detection_path,
+            cropped_local_detection_path,
+            candidate_alpha_path,
+            cropped_geometry_path,
+            crop_manifest_path,
+        )
+    )
+    original, detection, local_detection, candidate, cropped_geometry, manifest = (
+        _validate_cropped_inputs(*paths, outputs)
+    )
+    alpha, refinement = refine_candidate_boundary(original, candidate)
+    mask = Image.new("RGBA", original.size, (255, 255, 255, 0))
+    mask.putalpha(alpha)
+    mask_bytes = _png_bytes(mask)
+    editable = alpha.point(lambda value: 255 if value == 0 else 0)
+    red_tint = Image.blend(
+        original, Image.new("RGB", original.size, (230, 70, 55)), 0.65
+    )
+    overlay_bytes = _png_bytes(Image.composite(red_tint, original, editable))
+    protected_ratio, border_contact_ratio = _mask_metrics(alpha)
+    reasons = ["mask_review_required"]
+    if refinement.status == "fallback":
+        reasons.insert(0, "boundary_refinement_fallback")
+    if not _MIN_PROTECTED_RATIO <= protected_ratio <= _MAX_PROTECTED_RATIO:
+        reasons.insert(0, "protected_ratio_out_of_range")
+    assessment = MaskAssessment(
+        status="review",
+        reasons=reasons,
+        protected_ratio=protected_ratio,
+        background_editable_ratio=round(1 - protected_ratio, 6),
+        border_contact_ratio=border_contact_ratio,
+        undeclared_border_contact_ratio=0.0,
+        automatic_wawapi_edit_allowed=False,
+        mask_review_status="required",
+        unresolved_uncertain_region_ids=tuple(
+            item["id"] for item in cropped_geometry.get("uncertain_regions", [])
+        ),
+        declared_border_contact_missing_ids=(),
+    )
+    report = {
+        **asdict(assessment),
+        "schema_version": "mask-assessment-draft-1.0",
+        "product_id": cropped_geometry["product_id"],
+        "crop_manifest_sha256": _source_digest(paths[5]),
+        "cropped_geometry_sha256": cropped_geometry["cropped_geometry_sha256"],
+        "inputs": {
+            "cropped_original": _contract_record(
+                outputs.run_root, paths[0], "RGB", original.size
+            ),
+            "cropped_detection": _contract_record(
+                outputs.run_root, paths[1], "L", detection.size
+            ),
+            "cropped_local_detection": _contract_record(
+                outputs.run_root, paths[2], "L", local_detection.size
+            ),
+            "candidate_alpha": _contract_record(
+                outputs.run_root, paths[3], "L", candidate.size
+            ),
+        },
+        "crop_manifest": manifest,
+        "boundary_refinement": asdict(refinement),
+        "mask_sha256": _bytes_digest(mask_bytes),
+        "overlay_sha256": _bytes_digest(overlay_bytes),
+    }
+    atomic_create_bytes(outputs.mask_path, mask_bytes)
+    atomic_create_bytes(outputs.overlay_path, overlay_bytes)
+    atomic_create_json(outputs.report_path, report)
+    return assessment
+
+
 def create_mask(
     input_path: str | Path,
     output_path: str | Path,
@@ -771,7 +991,7 @@ def main(argv: list[str] | None = None) -> int:
         if any(asset_values):
             if not all(asset_values):
                 parser.error("image-output、mask-output、overlay 和 report 必须同时提供")
-            assessment = create_background_edit_assets(
+            assessment = create_background_edit_assets_legacy_read_only(
                 args.input, args.image_output, args.mask_output, args.overlay, args.report,
                 args.geometry_profile, args.product_id,
             )
@@ -789,12 +1009,14 @@ __all__ = [
     "BoundaryVariantReport",
     "BoundaryRefinementReport",
     "MaskAssessment",
+    "MaskOutputPaths",
     "ASSESSMENT_EXIT_CODES",
     "MAX_IMAGE_PIXELS",
     "load_vision_geometry",
     "rasterize_vision_geometry",
     "refine_candidate_boundary",
     "create_background_edit_assets",
+    "create_background_edit_assets_legacy_read_only",
     "create_mask",
     "main",
 ]
