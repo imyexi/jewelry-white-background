@@ -9,12 +9,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 SCRIPTS_DIR = Path(__file__).parents[1] / "scripts"
 CONFIRMATIONS_SCRIPT = SCRIPTS_DIR / "workflow_confirmations.py"
 STATE_SCRIPT = SCRIPTS_DIR / "workflow_state.py"
+MASK_SCRIPT = SCRIPTS_DIR / "create_background_edit_mask.py"
+ROOT_MASK_WRAPPER = Path(__file__).parents[3] / "scripts" / "create_background_edit_mask.py"
 
 
 def load_path(name: str, path: Path):
@@ -32,6 +34,29 @@ def fixed_now() -> datetime:
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest().upper()
+
+
+def canonical_digest(payload: dict[str, object], digest_field: str) -> str:
+    encoded = json.dumps(
+        {key: value for key, value in payload.items() if key != digest_field},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest().upper()
+
+
+def test_confirmation_module_ignores_preloaded_root_mask_wrapper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    wrapper = load_path("root_mask_wrapper_collision_fixture", ROOT_MASK_WRAPPER)
+    monkeypatch.setitem(sys.modules, "create_background_edit_mask", wrapper)
+
+    module = load_path("workflow_confirmations_import_collision", CONFIRMATIONS_SCRIPT)
+
+    assert module.validate_published_mask_technical_gate.__module__ == (
+        "_jewelry_workflow_mask_contract"
+    )
 
 
 def advance_to_mask_ready(state, paths) -> None:
@@ -103,8 +128,18 @@ def write_review_case(tmp_path: Path):
     cropped_detection = image("cropped/SY1537_detection.png", "L")
     cropped_local = image("cropped/SY1537_local_detection.png", "L")
     candidate_alpha = image("cropped/SY1537_geometry_candidate_alpha.png", "L")
-    mask = image("mask/SY1537_product-protection-mask.png", "L")
-    overlay = image("mask/SY1537_editable-overlay.png", "RGB")
+    with Image.open(cropped_original) as opened:
+        prepared_original = opened.copy()
+    ImageDraw.Draw(prepared_original).rectangle((5, 4, 14, 11), fill=(90, 90, 90))
+    prepared_original.save(cropped_original, "PNG")
+    for path, value in ((cropped_detection, 50), (cropped_local, 60)):
+        with Image.open(path) as opened:
+            prepared_detection = opened.copy()
+        ImageDraw.Draw(prepared_detection).rectangle((5, 4, 14, 11), fill=value)
+        prepared_detection.save(path, "PNG")
+    candidate = Image.new("L", (20, 16), 0)
+    ImageDraw.Draw(candidate).rectangle((5, 4, 14, 11), fill=255)
+    candidate.save(candidate_alpha, "PNG")
     source_geometry = binary(
         "geometry/SY1537_geometry.json",
         json.dumps(
@@ -116,29 +151,106 @@ def write_review_case(tmp_path: Path):
             }
         ).encode(),
     )
+    cropped_geometry_payload: dict[str, object] = {
+        "schema_version": "vision-cropped-geometry-1.0",
+        "product_id": "SY1537",
+        "source_geometry_sha256": "A" * 64,
+        "source_sha256": "B" * 64,
+        "detection_image_sha256": "C" * 64,
+        "source_size": [40, 32],
+        "crop_box": [10, 8, 30, 24],
+        "crop_size": [20, 16],
+        "coordinate_space": "crop-pixel",
+        "coordinate_bounds": [0, 0, 20, 16],
+        "primitives": [
+            {
+                "id": "product",
+                "type": "polygon",
+                "semantic": "product",
+                "points": [[5, 4], [14, 4], [14, 11], [5, 11]],
+                "touches_border": False,
+            }
+        ],
+        "uncertain_regions": [
+            {"id": "cord", "bbox": [5, 4, 15, 12], "reason": "pale"}
+        ],
+    }
+    cropped_geometry_payload["cropped_geometry_sha256"] = canonical_digest(
+        cropped_geometry_payload, "cropped_geometry_sha256"
+    )
     cropped_geometry = binary(
         "geometry/SY1537_cropped_geometry.json",
-        json.dumps(
-            {
-                "schema_version": "vision-cropped-geometry-1.0",
-                "uncertain_regions": [
-                    {"id": "cord", "bbox": [1, 1, 2, 2], "reason": "pale"}
-                ],
-            }
-        ).encode(),
+        (json.dumps(cropped_geometry_payload, ensure_ascii=False, indent=2) + "\n").encode(),
     )
-    crop_manifest = binary("manifests/SY1537_crop_manifest.json", b'{"ok":true}')
-    draft_assessment = binary(
-        "logs/SY1537_mask-assessment.draft.json",
-        json.dumps(
-            {
-                "schema_version": "mask-assessment-draft-1.0",
-                "status": "review",
-                "technical_blockers": [],
-                "unresolved_uncertain_region_ids": ["cord"],
-            }
-        ).encode(),
+
+    def record(path: Path, mode: str) -> dict[str, object]:
+        return {
+            "path": path.relative_to(paths.root).as_posix(),
+            "sha256": sha256(path),
+            "size": [20, 16],
+            "mode": mode,
+        }
+
+    crop_manifest_payload = {
+        "schema_version": "geometry-crop-manifest-1.0",
+        "product_id": "SY1537",
+        "source_geometry_sha256": "A" * 64,
+        "source_sha256": "B" * 64,
+        "detection_image_sha256": "C" * 64,
+        "local_detection_image_sha256": "D" * 64,
+        "detection_manifest_sha256": "E" * 64,
+        "source_size": [40, 32],
+        "content_box": [15, 12, 25, 20],
+        "crop_box": [10, 8, 30, 24],
+        "crop_size": [20, 16],
+        "target_max_occupancy": [77, 100],
+        "actual_occupancy": {"width": 0.5, "height": 0.5},
+        "source_limited_axes": [],
+        "verified_source_border_primitive_ids": [],
+        "source_geometry": {
+            "path": source_geometry.relative_to(paths.root).as_posix(),
+            "sha256": sha256(source_geometry),
+            "semantic_sha256": "A" * 64,
+        },
+        "outputs": {
+            "cropped_original": record(cropped_original, "RGB"),
+            "cropped_detection": record(cropped_detection, "L"),
+            "cropped_local_detection": record(cropped_local, "L"),
+            "candidate_alpha": record(candidate_alpha, "L"),
+        },
+        "cropped_geometry": {
+            "path": cropped_geometry.relative_to(paths.root).as_posix(),
+            "sha256": sha256(cropped_geometry),
+            "semantic_sha256": cropped_geometry_payload[
+                "cropped_geometry_sha256"
+            ],
+        },
+        "crop_algorithm": "geometry-crop-77-over-100-v1",
+    }
+    crop_manifest = binary(
+        "manifests/SY1537_crop_manifest.json",
+        (json.dumps(crop_manifest_payload, ensure_ascii=False, indent=2) + "\n").encode(),
     )
+    mask_module = load_path("mask_for_confirmation_fixture", MASK_SCRIPT)
+    mask = paths.root / "mask" / "SY1537_product-protection-mask.png"
+    overlay = paths.root / "mask" / "SY1537_editable-overlay.png"
+    draft_assessment = paths.root / "logs" / "SY1537_mask-assessment.draft.json"
+    mask_outputs = mask_module.MaskOutputPaths(
+        run_root=paths.root,
+        mask_path=mask,
+        overlay_path=overlay,
+        report_path=draft_assessment,
+    )
+    assessment = mask_module.create_background_edit_assets(
+        cropped_original,
+        cropped_detection,
+        cropped_local,
+        candidate_alpha,
+        cropped_geometry,
+        crop_manifest,
+        mask_outputs,
+    )
+    assert assessment.status == "review"
     product_context = paths.root / "product_context.json"
     product_context.write_text(
         json.dumps(
@@ -274,3 +386,152 @@ def test_technical_blocker_prevents_review_bundle(tmp_path: Path) -> None:
         module.create_mask_review_bundle(paths, assets, now=fixed_now)
 
     assert not (paths.root / "manifests" / "mask_review_bundle.json").exists()
+
+
+def test_forged_passing_draft_cannot_override_invalid_actual_mask(
+    tmp_path: Path,
+) -> None:
+    _state, module, paths, assets = write_review_case(tmp_path)
+    Image.new("RGBA", (20, 16), (255, 255, 255, 255)).save(assets.mask_path, "PNG")
+    draft = json.loads(assets.draft_assessment_path.read_text(encoding="utf-8"))
+    draft["status"] = "review"
+    draft["technical_blockers"] = []
+    assets.draft_assessment_path.write_text(json.dumps(draft), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="技术门禁"):
+        module.create_mask_review_bundle(paths, assets, now=fixed_now)
+
+
+def test_changed_review_bundle_file_invalidates_old_review(tmp_path: Path) -> None:
+    _state, module, paths, assets = write_review_case(tmp_path)
+    module.create_mask_review_bundle(paths, assets, now=fixed_now)
+    bundle_path = paths.root / "manifests" / "mask_review_bundle.json"
+    changed = json.loads(bundle_path.read_text(encoding="utf-8"))
+    changed["created_at"] = "2026-08-16T10:00:00.000Z"
+    bundle_path.write_text(json.dumps(changed), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="bundle|审阅"):
+        module.confirm_mask_review(
+            paths,
+            changed,
+            reviewer="session-1",
+            resolved_ids=["cord"],
+            now=fixed_now,
+            uuid_factory=uuid.uuid4,
+        )
+
+
+def test_tampered_draft_audit_fields_prevent_review_bundle(tmp_path: Path) -> None:
+    _state, module, paths, assets = write_review_case(tmp_path)
+    draft = json.loads(assets.draft_assessment_path.read_text(encoding="utf-8"))
+    draft["edge_algorithms"]["original_rgb"] = "forged-algorithm"
+    assets.draft_assessment_path.write_text(json.dumps(draft), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="技术门禁"):
+        module.create_mask_review_bundle(paths, assets, now=fixed_now)
+
+
+def test_normal_confirmation_records_review_event_with_requested_time(
+    tmp_path: Path,
+) -> None:
+    state, module, paths, assets = write_review_case(tmp_path)
+    bundle = module.create_mask_review_bundle(paths, assets, now=fixed_now)
+
+    module.confirm_mask_review(
+        paths,
+        bundle,
+        reviewer="session-1",
+        resolved_ids=["cord"],
+        now=fixed_now,
+        uuid_factory=lambda: uuid.UUID("33333333-3333-3333-3333-333333333333"),
+    )
+
+    confirmed = state.load_state(paths)
+    assert confirmed["status"] == "mask_confirmed"
+    assert confirmed["history"][-1]["event"] == "mask_review_confirmed"
+    assert confirmed["history"][-1]["at"] == "2026-08-16T09:30:00.000Z"
+
+
+def test_tampered_receipt_identity_or_duplicate_resolution_fails_closed(
+    tmp_path: Path,
+) -> None:
+    _state, module, paths, assets = write_review_case(tmp_path)
+    bundle = module.create_mask_review_bundle(paths, assets, now=fixed_now)
+    module.confirm_mask_review(
+        paths,
+        bundle,
+        reviewer="session-1",
+        resolved_ids=["cord"],
+        now=fixed_now,
+        uuid_factory=lambda: uuid.UUID("33333333-3333-3333-3333-333333333333"),
+    )
+    receipt_path = paths.root / "confirmations" / "mask_confirmation.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["run_id"] = "wrong-run"
+    receipt["resolved_uncertain_region_ids"] = ["cord", "cord"]
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+
+    gate = module.validate_mask_confirmation(paths)
+
+    assert gate.automatic_wawapi_edit_allowed is False
+    assert "confirmation_invalid" in gate.blockers
+
+
+def test_existing_receipt_can_resume_state_after_crash(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state, module, paths, assets = write_review_case(tmp_path)
+    bundle = module.create_mask_review_bundle(paths, assets, now=fixed_now)
+    real_transition = module.transition_state
+
+    def crash_before_state(*args, **kwargs):
+        if kwargs.get("next_status") == "mask_confirmed":
+            raise RuntimeError("simulated crash")
+        return real_transition(*args, **kwargs)
+
+    monkeypatch.setattr(module, "transition_state", crash_before_state)
+    with pytest.raises(RuntimeError, match="simulated crash"):
+        module.confirm_mask_review(
+            paths,
+            bundle,
+            reviewer="session-1",
+            resolved_ids=["cord"],
+            now=fixed_now,
+            uuid_factory=lambda: uuid.UUID(
+                "33333333-3333-3333-3333-333333333333"
+            ),
+        )
+    assert state.load_state(paths)["status"] == "awaiting_mask_confirmation"
+    monkeypatch.setattr(module, "transition_state", real_transition)
+
+    gate = module.validate_mask_confirmation(paths)
+
+    assert gate.automatic_wawapi_edit_allowed is True
+    resumed = state.load_state(paths)
+    assert resumed["status"] == "mask_confirmed"
+    assert resumed["receipts"]["mask"]["sha256"] == sha256(
+        paths.root / "confirmations" / "mask_confirmation.json"
+    )
+
+
+def test_existing_bundle_can_resume_state_after_crash(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state, module, paths, assets = write_review_case(tmp_path)
+    real_transition = module.transition_state
+    monkeypatch.setattr(
+        module,
+        "transition_state",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("simulated crash")),
+    )
+    with pytest.raises(RuntimeError, match="simulated crash"):
+        module.create_mask_review_bundle(paths, assets, now=fixed_now)
+    assert state.load_state(paths)["status"] == "mask_ready"
+    monkeypatch.setattr(module, "transition_state", real_transition)
+
+    bundle = module.create_mask_review_bundle(paths, assets, now=fixed_now)
+
+    assert bundle["schema_version"] == "mask-review-bundle-1.0"
+    assert state.load_state(paths)["status"] == "awaiting_mask_confirmation"

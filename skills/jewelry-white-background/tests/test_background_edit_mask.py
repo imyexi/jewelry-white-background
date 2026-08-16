@@ -1051,7 +1051,7 @@ def test_formal_module_has_no_ring_inference_or_annulus_fallback() -> None:
     assert "inner-rx" not in source
 
 
-def write_cropped_contract(tmp_path: Path, module):
+def write_cropped_contract(tmp_path: Path, module, *, edge_evidence: bool = False):
     run_root = tmp_path / "SYTEST" / "run-1"
     cropped = run_root / "cropped"
     geometry_dir = run_root / "geometry"
@@ -1066,6 +1066,21 @@ def write_cropped_contract(tmp_path: Path, module):
     Image.new("RGB", (20, 16), (230, 232, 234)).save(original, "PNG")
     Image.new("L", (20, 16), 128).save(detection, "PNG")
     Image.new("L", (20, 16), 140).save(local_detection, "PNG")
+    if edge_evidence:
+        with Image.open(original) as opened:
+            original_image = opened.copy()
+        ImageDraw.Draw(original_image).rectangle(
+            (5, 4, 14, 11), fill=(90, 90, 90)
+        )
+        original_image.save(original, "PNG")
+        with Image.open(detection) as opened:
+            global_image = opened.copy()
+        ImageDraw.Draw(global_image).rectangle((5, 4, 14, 11), fill=50)
+        global_image.save(detection, "PNG")
+        with Image.open(local_detection) as opened:
+            local_image = opened.copy()
+        ImageDraw.Draw(local_image).rectangle((5, 4, 14, 11), fill=60)
+        local_image.save(local_detection, "PNG")
     alpha = Image.new("L", (20, 16), 0)
     ImageDraw.Draw(alpha).rectangle((5, 4, 14, 11), fill=255)
     alpha.save(candidate, "PNG")
@@ -1199,6 +1214,7 @@ def test_new_refinement_uses_supplied_three_way_evidence_without_regeneration(
 ) -> None:
     module = load_module()
     original = Image.new("RGB", (80, 80), (220, 220, 220))
+    ImageDraw.Draw(original).rectangle((20, 20, 60, 60), fill=(100, 100, 100))
     global_detection = Image.new("L", (80, 80), 220)
     local_detection = Image.new("L", (80, 80), 220)
     ImageDraw.Draw(global_detection).rectangle((20, 20, 60, 60), fill=80)
@@ -1229,6 +1245,50 @@ def test_new_refinement_uses_supplied_three_way_evidence_without_regeneration(
     assert report.invariant_core_preserved is True
     assert report.invariant_outside_band is True
     assert report.invariant_border_frozen is True
+
+
+def test_new_refinement_falls_back_when_original_dynamic_range_is_too_low() -> None:
+    module = load_module()
+    original = Image.new("RGB", (80, 80), (220, 220, 220))
+    global_detection = Image.new("L", (80, 80), 220)
+    local_detection = Image.new("L", (80, 80), 220)
+    ImageDraw.Draw(global_detection).rectangle((20, 20, 60, 60), fill=80)
+    ImageDraw.Draw(local_detection).rectangle((20, 20, 60, 60), fill=90)
+    candidate = Image.new("L", (80, 80), 0)
+    ImageDraw.Draw(candidate).rectangle((22, 22, 58, 58), fill=255)
+
+    refined, report = module.refine_candidate_boundary(
+        original,
+        global_detection,
+        local_detection,
+        candidate,
+    )
+
+    assert report.status == "fallback"
+    assert refined.tobytes() == candidate.tobytes()
+
+
+def test_ratio_gate_uses_exact_value_before_rounding() -> None:
+    module = load_module()
+    alpha = Image.new("L", (200, 1000), 0)
+    alpha.putdata([255] * 999 + [0] * (200_000 - 999))
+
+    exact, reported = module._mask_ratio_values(alpha)
+
+    assert exact == 999 / 200_000
+    assert reported == 0.004995
+    assert exact < 0.005
+
+
+def test_undeclared_border_gate_keeps_sub_millionth_contact_for_blocking() -> None:
+    module = load_module()
+    alpha = Image.new("L", (5_000_000, 1), 0)
+    alpha.putpixel((2_500_000, 0), 255)
+
+    ratio, missing = module._cropped_border_gate(alpha, {"primitives": []})
+
+    assert ratio == 1 / 5_000_000
+    assert missing == ()
 
 
 def test_new_refinement_falls_back_when_only_one_evidence_route_supports_edge() -> None:
@@ -1324,3 +1384,35 @@ def test_new_mask_entry_fallback_is_a_technical_failure_not_a_review_hook(
     report = json.loads(inputs[-1].report_path.read_text(encoding="utf-8"))
     assert "boundary_refinement_fallback" in report["technical_blockers"]
     assert "automatic_wawapi_edit_allowed" not in report
+
+
+def test_published_mask_gate_recomputes_instead_of_trusting_draft(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    inputs = list(write_cropped_contract(tmp_path, module, edge_evidence=True))
+    assessment = module.create_background_edit_assets(*inputs)
+    assert assessment.status == "review"
+    outputs = inputs[-1]
+
+    valid = module.validate_published_mask_technical_gate(
+        *inputs[:-1],
+        mask_path=outputs.mask_path,
+        overlay_path=outputs.overlay_path,
+        draft_assessment_path=outputs.report_path,
+        run_root=outputs.run_root,
+    )
+    assert valid.passed is True
+
+    forged_mask = Image.new("RGBA", (20, 16), (255, 255, 255, 255))
+    forged_mask.save(outputs.mask_path, "PNG")
+    invalid = module.validate_published_mask_technical_gate(
+        *inputs[:-1],
+        mask_path=outputs.mask_path,
+        overlay_path=outputs.overlay_path,
+        draft_assessment_path=outputs.report_path,
+        run_root=outputs.run_root,
+    )
+
+    assert invalid.passed is False
+    assert "published_mask_mismatch" in invalid.blockers

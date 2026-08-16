@@ -119,6 +119,13 @@ class DraftMaskAssessment:
 
 
 @dataclass(frozen=True)
+class PublishedMaskTechnicalGate:
+    passed: bool
+    blockers: tuple[str, ...]
+    assessment: DraftMaskAssessment
+
+
+@dataclass(frozen=True)
 class MaskOutputPaths:
     run_root: Path
     mask_path: Path
@@ -557,7 +564,13 @@ def refine_candidate_boundary(
                 consensus_pixels[x, y] = 255
 
     consensus_band_pixels = _count_nonzero(ImageChops.multiply(consensus, band))
-    if band_pixels == 0 or consensus_band_pixels == 0:
+    original_extrema = ImageStat.Stat(original_rgb.convert("L")).extrema[0]
+    original_dynamic_range = original_extrema[1] - original_extrema[0]
+    if (
+        original_dynamic_range < 8
+        or band_pixels == 0
+        or consensus_band_pixels == 0
+    ):
         refined = alpha.copy()
         status = "fallback"
         fallback = "insufficient_cross_variant_edge_evidence"
@@ -695,6 +708,12 @@ def _mask_metrics(alpha: Image.Image) -> tuple[float, float]:
     border_pixels = _count_nonzero(border)
     contact = _count_nonzero(ImageChops.multiply(alpha, border)) / max(1, border_pixels)
     return round(protected_ratio, 6), round(contact, 6)
+
+
+def _mask_ratio_values(alpha: Image.Image) -> tuple[float, float]:
+    protected_pixels = alpha.histogram()[255]
+    exact = protected_pixels / max(1, alpha.width * alpha.height)
+    return exact, round(exact, 6)
 
 
 def _declared_border_contact_missing_ids(
@@ -897,6 +916,8 @@ def _validate_cropped_inputs(
     cropped_geometry_path: Path,
     crop_manifest_path: Path,
     outputs: MaskOutputPaths,
+    *,
+    require_unpublished_outputs: bool = True,
 ) -> tuple[Image.Image, Image.Image, Image.Image, Image.Image, dict[str, Any], dict[str, Any]]:
     inputs = (
         cropped_original_path,
@@ -911,7 +932,7 @@ def _validate_cropped_inputs(
         _relative_contract_path(outputs.run_root, path, must_exist=True)
     for path in published:
         _relative_contract_path(outputs.run_root, path, must_exist=False)
-        if path.exists():
+        if require_unpublished_outputs and path.exists():
             raise FileExistsError(path)
     if len({path.resolve() for path in (*inputs, *published)}) != 9:
         raise ValueError("Mask 输入输出路径必须互不相同")
@@ -1116,11 +1137,74 @@ def _cropped_border_gate(
             missing.append(primitive["id"])
         declared_contact = ImageChops.lighter(declared_contact, primitive_contact)
     undeclared = ImageChops.subtract(final_contact, declared_contact)
-    ratio = round(
-        _count_nonzero(undeclared) / max(1, _count_nonzero(border)),
-        6,
-    )
+    ratio = _count_nonzero(undeclared) / max(1, _count_nonzero(border))
     return ratio, tuple(missing)
+
+
+def _build_draft_mask(
+    original: Image.Image,
+    detection: Image.Image,
+    local_detection: Image.Image,
+    candidate: Image.Image,
+    cropped_geometry: dict[str, Any],
+) -> tuple[
+    Image.Image,
+    BoundaryRefinementReport,
+    DraftMaskAssessment,
+    bytes,
+    bytes,
+]:
+    alpha, refinement = refine_candidate_boundary(
+        original,
+        detection,
+        local_detection,
+        candidate,
+    )
+    mask = Image.new("RGBA", original.size, (255, 255, 255, 0))
+    mask.putalpha(alpha)
+    mask_bytes = _png_bytes(mask)
+    editable = alpha.point(lambda value: 255 if value == 0 else 0)
+    red_tint = Image.blend(
+        original, Image.new("RGB", original.size, (230, 70, 55)), 0.65
+    )
+    overlay_bytes = _png_bytes(Image.composite(red_tint, original, editable))
+    protected_ratio_exact, protected_ratio = _mask_ratio_values(alpha)
+    _reported_ratio, border_contact_ratio = _mask_metrics(alpha)
+    undeclared_border_ratio_exact, missing_border_ids = _cropped_border_gate(
+        alpha, cropped_geometry
+    )
+    technical_blockers: list[str] = []
+    if refinement.status == "fallback":
+        technical_blockers.append("boundary_refinement_fallback")
+    if not (
+        refinement.invariant_core_preserved
+        and refinement.invariant_outside_band
+        and refinement.invariant_border_frozen
+    ):
+        technical_blockers.append("boundary_refinement_invariant_failed")
+    if not _MIN_PROTECTED_RATIO <= protected_ratio_exact <= _MAX_PROTECTED_RATIO:
+        technical_blockers.append("protected_ratio_out_of_range")
+    if undeclared_border_ratio_exact > 0:
+        technical_blockers.append("undeclared_border_contact")
+    if missing_border_ids:
+        technical_blockers.append("declared_border_contact_missing")
+    reasons = [*technical_blockers]
+    if not technical_blockers:
+        reasons.append("mask_review_required")
+    assessment = DraftMaskAssessment(
+        status="fail" if technical_blockers else "review",
+        reasons=reasons,
+        protected_ratio=protected_ratio,
+        background_editable_ratio=round(1 - protected_ratio_exact, 6),
+        border_contact_ratio=border_contact_ratio,
+        undeclared_border_contact_ratio=round(undeclared_border_ratio_exact, 6),
+        unresolved_uncertain_region_ids=tuple(
+            item["id"] for item in cropped_geometry.get("uncertain_regions", [])
+        ),
+        declared_border_contact_missing_ids=missing_border_ids,
+        technical_blockers=tuple(technical_blockers),
+    )
+    return alpha, refinement, assessment, mask_bytes, overlay_bytes
 
 
 def create_background_edit_assets(
@@ -1146,58 +1230,47 @@ def create_background_edit_assets(
     original, detection, local_detection, candidate, cropped_geometry, manifest = (
         _validate_cropped_inputs(*paths, outputs)
     )
-    alpha, refinement = refine_candidate_boundary(
+    _alpha, refinement, assessment, mask_bytes, overlay_bytes = _build_draft_mask(
         original,
         detection,
         local_detection,
         candidate,
-    )
-    mask = Image.new("RGBA", original.size, (255, 255, 255, 0))
-    mask.putalpha(alpha)
-    mask_bytes = _png_bytes(mask)
-    editable = alpha.point(lambda value: 255 if value == 0 else 0)
-    red_tint = Image.blend(
-        original, Image.new("RGB", original.size, (230, 70, 55)), 0.65
-    )
-    overlay_bytes = _png_bytes(Image.composite(red_tint, original, editable))
-    protected_ratio, border_contact_ratio = _mask_metrics(alpha)
-    undeclared_border_ratio, missing_border_ids = _cropped_border_gate(
-        alpha, cropped_geometry
-    )
-    technical_blockers: list[str] = []
-    if refinement.status == "fallback":
-        technical_blockers.append("boundary_refinement_fallback")
-    if not (
-        refinement.invariant_core_preserved
-        and refinement.invariant_outside_band
-        and refinement.invariant_border_frozen
-    ):
-        technical_blockers.append("boundary_refinement_invariant_failed")
-    if not _MIN_PROTECTED_RATIO <= protected_ratio <= _MAX_PROTECTED_RATIO:
-        technical_blockers.append("protected_ratio_out_of_range")
-    if undeclared_border_ratio > 0:
-        technical_blockers.append("undeclared_border_contact")
-    if missing_border_ids:
-        technical_blockers.append("declared_border_contact_missing")
-    reasons = [*technical_blockers]
-    if not technical_blockers:
-        reasons.append("mask_review_required")
-    assessment = DraftMaskAssessment(
-        status="fail" if technical_blockers else "review",
-        reasons=reasons,
-        protected_ratio=protected_ratio,
-        background_editable_ratio=round(1 - protected_ratio, 6),
-        border_contact_ratio=border_contact_ratio,
-        undeclared_border_contact_ratio=undeclared_border_ratio,
-        unresolved_uncertain_region_ids=tuple(
-            item["id"] for item in cropped_geometry.get("uncertain_regions", [])
-        ),
-        declared_border_contact_missing_ids=missing_border_ids,
-        technical_blockers=tuple(technical_blockers),
+        cropped_geometry,
     )
     report = {
         **asdict(assessment),
         "schema_version": "mask-assessment-draft-1.0",
+        **_draft_audit_fields(
+            paths,
+            outputs,
+            original,
+            detection,
+            local_detection,
+            candidate,
+            cropped_geometry,
+            manifest,
+        ),
+        "boundary_refinement": asdict(refinement),
+        "mask_sha256": _bytes_digest(mask_bytes),
+        "overlay_sha256": _bytes_digest(overlay_bytes),
+    }
+    atomic_create_bytes(outputs.mask_path, mask_bytes)
+    atomic_create_bytes(outputs.overlay_path, overlay_bytes)
+    atomic_create_json(outputs.report_path, report)
+    return assessment
+
+
+def _draft_audit_fields(
+    paths: tuple[Path, ...],
+    outputs: MaskOutputPaths,
+    original: Image.Image,
+    detection: Image.Image,
+    local_detection: Image.Image,
+    candidate: Image.Image,
+    cropped_geometry: dict[str, Any],
+    manifest: dict[str, Any],
+) -> dict[str, Any]:
+    return {
         "product_id": cropped_geometry["product_id"],
         "crop_manifest_sha256": _source_digest(paths[5]),
         "cropped_geometry_sha256": cropped_geometry["cropped_geometry_sha256"],
@@ -1216,14 +1289,107 @@ def create_background_edit_assets(
             ),
         },
         "crop_manifest": manifest,
-        "boundary_refinement": asdict(refinement),
-        "mask_sha256": _bytes_digest(mask_bytes),
-        "overlay_sha256": _bytes_digest(overlay_bytes),
+        "crop_manifest_path": _relative_contract_path(
+            outputs.run_root, paths[5], must_exist=True
+        ),
+        "consensus_required": 2,
+        "edge_algorithms": {
+            "original_rgb": "rgb-luminance-and-chroma-forward-difference-v1",
+            "global_robust": "luminance-forward-difference-v1",
+            "local_limited": "luminance-forward-difference-v1",
+        },
     }
-    atomic_create_bytes(outputs.mask_path, mask_bytes)
-    atomic_create_bytes(outputs.overlay_path, overlay_bytes)
-    atomic_create_json(outputs.report_path, report)
-    return assessment
+
+
+def validate_published_mask_technical_gate(
+    cropped_original_path: str | Path,
+    cropped_detection_path: str | Path,
+    cropped_local_detection_path: str | Path,
+    candidate_alpha_path: str | Path,
+    cropped_geometry_path: str | Path,
+    crop_manifest_path: str | Path,
+    *,
+    mask_path: str | Path,
+    overlay_path: str | Path,
+    draft_assessment_path: str | Path,
+    run_root: str | Path,
+) -> PublishedMaskTechnicalGate:
+    input_paths = tuple(
+        Path(path)
+        for path in (
+            cropped_original_path,
+            cropped_detection_path,
+            cropped_local_detection_path,
+            candidate_alpha_path,
+            cropped_geometry_path,
+            crop_manifest_path,
+        )
+    )
+    outputs = MaskOutputPaths(
+        run_root=Path(run_root),
+        mask_path=Path(mask_path),
+        overlay_path=Path(overlay_path),
+        report_path=Path(draft_assessment_path),
+    )
+    original, detection, local_detection, candidate, cropped_geometry, manifest = (
+        _validate_cropped_inputs(
+            *input_paths,
+            outputs,
+            require_unpublished_outputs=False,
+        )
+    )
+    _alpha, refinement, assessment, mask_bytes, overlay_bytes = _build_draft_mask(
+        original,
+        detection,
+        local_detection,
+        candidate,
+        cropped_geometry,
+    )
+    blockers = list(assessment.technical_blockers)
+    try:
+        if outputs.mask_path.read_bytes() != mask_bytes:
+            blockers.append("published_mask_mismatch")
+        if outputs.overlay_path.read_bytes() != overlay_bytes:
+            blockers.append("published_overlay_mismatch")
+        draft = json.loads(outputs.report_path.read_text(encoding="utf-8"))
+        if not isinstance(draft, dict):
+            raise ValueError("draft assessment 必须是对象")
+        normalized_assessment = json.loads(
+            json.dumps(asdict(assessment), ensure_ascii=False)
+        )
+        if any(draft.get(key) != value for key, value in normalized_assessment.items()):
+            blockers.append("draft_assessment_mismatch")
+        normalized_refinement = json.loads(
+            json.dumps(asdict(refinement), ensure_ascii=False)
+        )
+        if draft.get("boundary_refinement") != normalized_refinement:
+            blockers.append("draft_assessment_mismatch")
+        if draft.get("mask_sha256") != _bytes_digest(mask_bytes):
+            blockers.append("draft_assessment_mismatch")
+        if draft.get("overlay_sha256") != _bytes_digest(overlay_bytes):
+            blockers.append("draft_assessment_mismatch")
+        if draft.get("consensus_required") != 2:
+            blockers.append("draft_assessment_mismatch")
+        expected_audit = _draft_audit_fields(
+            input_paths,
+            outputs,
+            original,
+            detection,
+            local_detection,
+            candidate,
+            cropped_geometry,
+            manifest,
+        )
+        if any(draft.get(key) != value for key, value in expected_audit.items()):
+            blockers.append("draft_assessment_mismatch")
+    except (OSError, ValueError, json.JSONDecodeError):
+        blockers.append("draft_assessment_mismatch")
+    blockers = list(dict.fromkeys(blockers))
+    return PublishedMaskTechnicalGate(
+        passed=not blockers and assessment.status == "review",
+        blockers=tuple(blockers),
+        assessment=assessment,
+    )
 
 
 def create_mask(
@@ -1296,12 +1462,14 @@ __all__ = [
     "DraftMaskAssessment",
     "MaskAssessment",
     "MaskOutputPaths",
+    "PublishedMaskTechnicalGate",
     "ASSESSMENT_EXIT_CODES",
     "MAX_IMAGE_PIXELS",
     "load_vision_geometry",
     "rasterize_vision_geometry",
     "refine_candidate_boundary",
     "refine_candidate_boundary_legacy_read_only",
+    "validate_published_mask_technical_gate",
     "create_background_edit_assets",
     "create_background_edit_assets_legacy_read_only",
     "create_mask",
