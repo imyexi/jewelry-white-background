@@ -8,10 +8,18 @@ import hashlib
 import io
 import json
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageFilter, ImageOps
+
+
+_SCRIPT_DIRECTORY = str(Path(__file__).resolve().parent)
+if _SCRIPT_DIRECTORY not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIRECTORY)
+
+from workflow_state import atomic_create_bytes  # noqa: E402
 
 
 MAX_IMAGE_PIXELS = 20_000_000
@@ -136,6 +144,15 @@ def _validate_paths(input_path: Path, output_paths: tuple[Path, ...]) -> None:
         raise ValueError("输入路径与所有输出路径必须互不相同")
 
 
+def _relative_run_path(run_root: Path, path: Path) -> str:
+    root = run_root.resolve()
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(root).as_posix()
+    except ValueError as exc:
+        raise ValueError("检测输入和输出必须位于当前运行目录") from exc
+
+
 def _png_bytes(image: Image.Image) -> bytes:
     buffer = io.BytesIO()
     image.save(buffer, "PNG")
@@ -151,13 +168,21 @@ def write_detection_images(
     global_output_path: str | Path,
     local_output_path: str | Path,
     report_path: str | Path,
+    *,
+    run_root: str | Path,
 ) -> dict[str, object]:
     input_path = Path(input_path)
     global_output_path = Path(global_output_path)
     local_output_path = Path(local_output_path)
     report_path = Path(report_path)
+    run_root = Path(run_root)
     outputs = (global_output_path, local_output_path, report_path)
     _validate_paths(input_path, outputs)
+    _relative_run_path(run_root, input_path)
+    for path in outputs:
+        _relative_run_path(run_root, path)
+        if path.exists():
+            raise FileExistsError(path)
 
     source_bytes = input_path.read_bytes()
     image = _load_rgb(input_path)
@@ -165,36 +190,55 @@ def write_detection_images(
     by_name = {variant.name: variant for variant in variants}
     global_bytes = _png_bytes(by_name["global_robust"].image)
     local_bytes = _png_bytes(by_name["local_limited"].image)
-    output_data = {
+    output_data: dict[str, tuple[Path, bytes]] = {
         "global_robust": (global_output_path, global_bytes),
         "local_limited": (local_output_path, local_bytes),
     }
+    global_variant = by_name["global_robust"]
+    local_variant = by_name["local_limited"]
+    local_radius = max(1, round(min(image.size) * LOCAL_BLUR_RATIO))
     report: dict[str, object] = {
-        "schema_version": "mask-detection-images-1.0",
+        "schema_version": "mask-detection-images-2.0",
         "detection_only": True,
         "source_sha256": _sha256_bytes(source_bytes),
         "source_size": list(image.size),
-        "variants": [
-            {
-                "name": variant.name,
-                "black_point": variant.black_point,
-                "white_point": variant.white_point,
-                "clipped_ratio": variant.clipped_ratio,
-                "output_sha256": _sha256_bytes(output_data[variant.name][1]),
+        "coordinate_transform": "identity",
+        "outputs": {
+            name: {
+                "path": _relative_run_path(run_root, path),
+                "sha256": _sha256_bytes(data),
+                "size": list(image.size),
+                "mode": "L",
             }
-            for variant in variants
-            if variant.name in output_data
-        ],
+            for name, (path, data) in output_data.items()
+        },
+        "algorithms": {
+            "global_robust": {
+                "low_fraction": GLOBAL_LOW_FRACTION,
+                "high_fraction": GLOBAL_HIGH_FRACTION,
+                "black_point": global_variant.black_point,
+                "white_point": global_variant.white_point,
+                "minimum_range": MIN_GLOBAL_RANGE,
+                "clipped_ratio": global_variant.clipped_ratio,
+            },
+            "local_limited": {
+                "blur_ratio": LOCAL_BLUR_RATIO,
+                "blur_radius": local_radius,
+                "detail_range": [LOCAL_DETAIL_LOW, LOCAL_DETAIL_HIGH],
+                "clipped_ratio": local_variant.clipped_ratio,
+            },
+        },
+        "authoritative_implementation": (
+            "skills/jewelry-white-background/scripts/prepare_mask_detection_images.py"
+        ),
     }
     report_bytes = (json.dumps(report, ensure_ascii=False, indent=2) + "\n").encode(
         "utf-8"
     )
 
-    for path in outputs:
-        path.parent.mkdir(parents=True, exist_ok=True)
-    global_output_path.write_bytes(global_bytes)
-    local_output_path.write_bytes(local_bytes)
-    report_path.write_bytes(report_bytes)
+    atomic_create_bytes(global_output_path, global_bytes)
+    atomic_create_bytes(local_output_path, local_bytes)
+    atomic_create_bytes(report_path, report_bytes)
     return report
 
 
@@ -206,10 +250,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--global-output", required=True, help="全局色阶检测图 PNG")
     parser.add_argument("--local-output", required=True, help="局部对比度检测图 PNG")
     parser.add_argument("--report", required=True, help="检测参数与摘要 JSON")
+    parser.add_argument("--run-root", required=True, help="当前运行根目录")
     args = parser.parse_args(argv)
     try:
         write_detection_images(
-            args.input, args.global_output, args.local_output, args.report
+            args.input,
+            args.global_output,
+            args.local_output,
+            args.report,
+            run_root=args.run_root,
         )
         return 0
     except (OSError, ValueError) as exc:

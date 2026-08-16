@@ -121,6 +121,8 @@ def test_cli_writes_detection_only_images_and_traceable_report(tmp_path: Path) -
             str(local_output),
             "--report",
             str(report_path),
+            "--run-root",
+            str(tmp_path),
         ],
         capture_output=True,
         check=False,
@@ -134,14 +136,34 @@ def test_cli_writes_detection_only_images_and_traceable_report(tmp_path: Path) -
             assert image.size == (96, 72)
 
     report = json.loads(report_path.read_text(encoding="utf-8"))
-    assert report["schema_version"] == "mask-detection-images-1.0"
+    assert report["schema_version"] == "mask-detection-images-2.0"
     assert report["detection_only"] is True
+    assert report["coordinate_transform"] == "identity"
+    assert report["authoritative_implementation"] == (
+        "skills/jewelry-white-background/scripts/prepare_mask_detection_images.py"
+    )
     assert report["source_sha256"] == sha256_file(source)
     assert report["source_size"] == [96, 72]
-    variants = {item["name"]: item for item in report["variants"]}
-    assert set(variants) == {"global_robust", "local_limited"}
-    assert variants["global_robust"]["output_sha256"] == sha256_file(global_output)
-    assert variants["local_limited"]["output_sha256"] == sha256_file(local_output)
+    assert report["outputs"] == {
+        "global_robust": {
+            "path": "global.png",
+            "sha256": sha256_file(global_output),
+            "size": [96, 72],
+            "mode": "L",
+        },
+        "local_limited": {
+            "path": "local.png",
+            "sha256": sha256_file(local_output),
+            "size": [96, 72],
+            "mode": "L",
+        },
+    }
+    assert report["algorithms"]["global_robust"]["low_fraction"] == 0.01
+    assert report["algorithms"]["global_robust"]["high_fraction"] == 0.99
+    assert report["algorithms"]["global_robust"]["minimum_range"] == 96
+    assert report["algorithms"]["local_limited"]["blur_ratio"] == 0.025
+    assert report["algorithms"]["local_limited"]["blur_radius"] == 2
+    assert report["algorithms"]["local_limited"]["detail_range"] == [96, 160]
 
 
 def test_cli_rejects_input_output_path_alias_before_writing(tmp_path: Path) -> None:
@@ -161,6 +183,8 @@ def test_cli_rejects_input_output_path_alias_before_writing(tmp_path: Path) -> N
             str(tmp_path / "local.png"),
             "--report",
             str(tmp_path / "report.json"),
+            "--run-root",
+            str(tmp_path),
         ],
         capture_output=True,
         check=False,
@@ -170,3 +194,38 @@ def test_cli_rejects_input_output_path_alias_before_writing(tmp_path: Path) -> N
     assert source.read_bytes() == source_before
     assert not (tmp_path / "local.png").exists()
     assert not (tmp_path / "report.json").exists()
+
+
+def test_cli_rejects_existing_target_without_writing_other_outputs(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.png"
+    global_output = tmp_path / "global.png"
+    local_output = tmp_path / "local.png"
+    report_path = tmp_path / "report.json"
+    sample_image().save(source, "PNG")
+    global_output.write_bytes(b"sentinel")
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT_PATH),
+            "--input",
+            str(source),
+            "--global-output",
+            str(global_output),
+            "--local-output",
+            str(local_output),
+            "--report",
+            str(report_path),
+            "--run-root",
+            str(tmp_path),
+        ],
+        capture_output=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert global_output.read_bytes() == b"sentinel"
+    assert not local_output.exists()
+    assert not report_path.exists()
