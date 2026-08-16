@@ -5,3 +5,4 @@ __pycache__/
 output/
 debug_*.jpg
 .agents/
+.worktrees/
