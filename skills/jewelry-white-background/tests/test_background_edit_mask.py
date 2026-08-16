@@ -316,7 +316,7 @@ def test_rasterizer_rejects_non_binary_candidate_alpha(tmp_path: Path) -> None:
     candidate.putpixel((80, 80), 128)
 
     with pytest.raises(ValueError, match="二值"):
-        module.refine_candidate_boundary(image, candidate)
+        module.refine_candidate_boundary_legacy_read_only(image, candidate)
 
 
 @pytest.mark.parametrize("mismatch", ["sha", "size", "product"])
@@ -753,7 +753,7 @@ def test_refinement_retracts_small_outer_margin_and_preserves_core() -> None:
     image = rectangle_scene(box=(52, 42, 128, 118))
     candidate = binary_rectangle(image.size, (50, 40, 130, 120))
 
-    refined, report = module.refine_candidate_boundary(image, candidate)
+    refined, report = module.refine_candidate_boundary_legacy_read_only(image, candidate)
 
     assert report.status == "applied"
     assert refined.getpixel((50, 80)) == 0
@@ -769,7 +769,7 @@ def test_refinement_expands_small_inner_candidate_to_supported_edge() -> None:
     image = rectangle_scene(box=(52, 42, 128, 118))
     candidate = binary_rectangle(image.size, (54, 44, 126, 116))
 
-    refined, report = module.refine_candidate_boundary(image, candidate)
+    refined, report = module.refine_candidate_boundary_legacy_read_only(image, candidate)
 
     assert report.status == "applied"
     assert refined.getpixel((52, 80)) == 255
@@ -789,7 +789,7 @@ def test_refinement_recalls_pale_transparent_bead_and_thin_cord() -> None:
     mask_draw.ellipse((50, 44, 110, 104), fill=255)
     mask_draw.line((108, 77, 168, 23), fill=255, width=5)
 
-    refined, report = module.refine_candidate_boundary(image, candidate)
+    refined, report = module.refine_candidate_boundary_legacy_read_only(image, candidate)
 
     assert report.status == "applied"
     assert refined.getpixel((48, 74)) == 255
@@ -810,7 +810,7 @@ def test_refinement_uses_rgb_chroma_edge_when_luminance_matches_background() -> 
 
     rgb_edge = module._edge_map(image)
     gray_edge = module._edge_map(image.convert("L"))
-    refined, report = module.refine_candidate_boundary(image, candidate)
+    refined, report = module.refine_candidate_boundary_legacy_read_only(image, candidate)
 
     assert rgb_edge.getpixel((35, 80)) > gray_edge.getpixel((35, 80))
     # 单一色度证据不越过跨版本共识门槛，但语义候选的细绳不能被删掉。
@@ -828,7 +828,7 @@ def test_refinement_falls_back_when_consensus_exists_only_outside_candidate_band
     ImageDraw.Draw(outside_only).rectangle((3, 3, 18, 150), fill=255)
     monkeypatch.setattr(module, "_edge_map", lambda _image: outside_only.copy())
 
-    refined, report = module.refine_candidate_boundary(image, candidate)
+    refined, report = module.refine_candidate_boundary_legacy_read_only(image, candidate)
 
     assert refined.tobytes() == candidate.tobytes()
     assert report.status == "fallback"
@@ -912,7 +912,7 @@ def test_refinement_ignores_strong_shadow_outside_narrow_band() -> None:
     ImageDraw.Draw(image).rectangle((4, 8, 26, 150), fill=(75, 75, 75))
     candidate = binary_rectangle(image.size, (50, 40, 130, 120))
 
-    refined, report = module.refine_candidate_boundary(image, candidate)
+    refined, report = module.refine_candidate_boundary_legacy_read_only(image, candidate)
 
     assert refined.getpixel((10, 80)) == 0
     assert report.invariant_outside_band is True
@@ -926,7 +926,7 @@ def test_refinement_freezes_canvas_border_for_declared_touching_product() -> Non
     candidate = Image.new("L", image.size, 0)
     ImageDraw.Draw(candidate).line((0, 80, 100, 80), fill=255, width=7)
 
-    refined, report = module.refine_candidate_boundary(image, candidate)
+    refined, report = module.refine_candidate_boundary_legacy_read_only(image, candidate)
 
     assert list(refined.crop((0, 0, 1, 160)).getdata()) == list(
         candidate.crop((0, 0, 1, 160)).getdata()
@@ -939,7 +939,7 @@ def test_low_contrast_refinement_falls_back_byte_for_byte() -> None:
     image = Image.new("RGB", (180, 160), (225, 225, 225))
     candidate = binary_rectangle(image.size, (50, 40, 130, 120))
 
-    refined, report = module.refine_candidate_boundary(image, candidate)
+    refined, report = module.refine_candidate_boundary_legacy_read_only(image, candidate)
 
     assert refined.tobytes() == candidate.tobytes()
     assert report.status == "fallback"
@@ -959,7 +959,7 @@ def test_refinement_reuses_fixed_detection_tool(monkeypatch: pytest.MonkeyPatch)
         return original_tool(source)
 
     monkeypatch.setattr(module, "prepare_mask_detection_images", tracked_tool)
-    module.refine_candidate_boundary(image, candidate)
+    module.refine_candidate_boundary_legacy_read_only(image, candidate)
 
     assert calls == [image]
     source = SCRIPT_PATH.read_text(encoding="utf-8")
@@ -972,8 +972,8 @@ def test_refinement_is_deterministic() -> None:
     image = rectangle_scene()
     candidate = binary_rectangle(image.size, (50, 40, 130, 120))
 
-    first_alpha, first_report = module.refine_candidate_boundary(image, candidate)
-    second_alpha, second_report = module.refine_candidate_boundary(image, candidate)
+    first_alpha, first_report = module.refine_candidate_boundary_legacy_read_only(image, candidate)
+    second_alpha, second_report = module.refine_candidate_boundary_legacy_read_only(image, candidate)
 
     assert first_alpha.tobytes() == second_alpha.tobytes()
     assert asdict(first_report) == asdict(second_report)
@@ -1194,6 +1194,63 @@ def test_new_mask_entry_accepts_only_cropped_contract_inputs() -> None:
     ]
 
 
+def test_new_refinement_uses_supplied_three_way_evidence_without_regeneration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = load_module()
+    original = Image.new("RGB", (80, 80), (220, 220, 220))
+    global_detection = Image.new("L", (80, 80), 220)
+    local_detection = Image.new("L", (80, 80), 220)
+    ImageDraw.Draw(global_detection).rectangle((20, 20, 60, 60), fill=80)
+    ImageDraw.Draw(local_detection).rectangle((20, 20, 60, 60), fill=90)
+    candidate = Image.new("L", (80, 80), 0)
+    ImageDraw.Draw(candidate).rectangle((22, 22, 58, 58), fill=255)
+    monkeypatch.setattr(
+        module,
+        "prepare_mask_detection_images",
+        lambda _image: pytest.fail("新流程不得重新生成检测图"),
+    )
+
+    refined, report = module.refine_candidate_boundary(
+        original,
+        global_detection,
+        local_detection,
+        candidate,
+    )
+
+    assert report.algorithm_version == "boundary-refinement-2.1"
+    assert [item.name for item in report.variants] == [
+        "original_rgb",
+        "global_robust",
+        "local_limited",
+    ]
+    assert report.status == "applied"
+    assert refined.getpixel((20, 40)) == 255
+    assert report.invariant_core_preserved is True
+    assert report.invariant_outside_band is True
+    assert report.invariant_border_frozen is True
+
+
+def test_new_refinement_falls_back_when_only_one_evidence_route_supports_edge() -> None:
+    module = load_module()
+    original = Image.new("RGB", (80, 80), (220, 220, 220))
+    global_detection = Image.new("L", (80, 80), 220)
+    local_detection = Image.new("L", (80, 80), 220)
+    ImageDraw.Draw(global_detection).rectangle((20, 20, 60, 60), fill=80)
+    candidate = Image.new("L", (80, 80), 0)
+    ImageDraw.Draw(candidate).rectangle((22, 22, 58, 58), fill=255)
+
+    refined, report = module.refine_candidate_boundary(
+        original,
+        global_detection,
+        local_detection,
+        candidate,
+    )
+
+    assert report.status == "fallback"
+    assert refined.tobytes() == candidate.tobytes()
+
+
 def test_new_mask_entry_rejects_tampered_crop_manifest_before_writing(
     tmp_path: Path,
 ) -> None:
@@ -1251,3 +1308,19 @@ def test_new_mask_entry_rejects_changed_source_geometry_file(tmp_path: Path) -> 
         module.create_background_edit_assets(*inputs)
 
     assert not inputs[-1].mask_path.exists()
+
+
+def test_new_mask_entry_fallback_is_a_technical_failure_not_a_review_hook(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    inputs = list(write_cropped_contract(tmp_path, module))
+
+    assessment = module.create_background_edit_assets(*inputs)
+
+    assert assessment.status == "fail"
+    assert "boundary_refinement_fallback" in assessment.technical_blockers
+    assert not hasattr(assessment, "automatic_wawapi_edit_allowed")
+    report = json.loads(inputs[-1].report_path.read_text(encoding="utf-8"))
+    assert "boundary_refinement_fallback" in report["technical_blockers"]
+    assert "automatic_wawapi_edit_allowed" not in report

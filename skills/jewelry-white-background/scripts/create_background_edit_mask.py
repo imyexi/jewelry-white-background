@@ -87,6 +87,7 @@ class BoundaryRefinementReport:
     invariant_outside_band: bool
     invariant_border_frozen: bool
     variants: tuple[BoundaryVariantReport, ...]
+    algorithm_version: str = "boundary-refinement-1.0"
 
 
 @dataclass(frozen=True)
@@ -101,6 +102,20 @@ class MaskAssessment:
     mask_review_status: str
     unresolved_uncertain_region_ids: tuple[str, ...]
     declared_border_contact_missing_ids: tuple[str, ...]
+    technical_blockers: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class DraftMaskAssessment:
+    status: str
+    reasons: list[str]
+    protected_ratio: float
+    background_editable_ratio: float
+    border_contact_ratio: float
+    undeclared_border_contact_ratio: float
+    unresolved_uncertain_region_ids: tuple[str, ...]
+    declared_border_contact_missing_ids: tuple[str, ...]
+    technical_blockers: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -403,7 +418,7 @@ def _border_mask(size: tuple[int, int]) -> Image.Image:
     return mask
 
 
-def refine_candidate_boundary(
+def refine_candidate_boundary_legacy_read_only(
     image: Image.Image, candidate_alpha: Image.Image
 ) -> tuple[Image.Image, BoundaryRefinementReport]:
     _validate_image_size(image.size)
@@ -486,6 +501,120 @@ def refine_candidate_boundary(
         invariant_outside_band=ImageChops.multiply(ImageChops.difference(refined, alpha), outside_band).getbbox() is None,
         invariant_border_frozen=ImageChops.multiply(ImageChops.difference(refined, alpha), _border_mask(image.size)).getbbox() is None,
         variants=variants,
+    )
+
+
+def refine_candidate_boundary(
+    original_rgb: Image.Image,
+    global_robust: Image.Image,
+    local_limited: Image.Image,
+    candidate_alpha: Image.Image,
+) -> tuple[Image.Image, BoundaryRefinementReport]:
+    _validate_image_size(original_rgb.size)
+    if original_rgb.mode != "RGB":
+        raise ValueError("裁剪原图必须为 RGB")
+    if global_robust.mode != "L" or local_limited.mode != "L":
+        raise ValueError("两张裁剪检测图必须为 L 模式")
+    if not (
+        global_robust.size
+        == local_limited.size
+        == candidate_alpha.size
+        == original_rgb.size
+    ):
+        raise ValueError("三路证据与候选 Alpha 尺寸必须一致")
+    alpha = candidate_alpha.convert("L")
+    if sum(alpha.histogram()[1:255]):
+        raise ValueError("候选 Alpha 必须是二值图")
+
+    edges = (
+        _edge_map(original_rgb),
+        _edge_map(global_robust),
+        _edge_map(local_limited),
+    )
+    thresholds = tuple(max(3, _percentile(edge, 0.86)) for edge in edges)
+    seeds = tuple(
+        edge.point(lambda value, threshold=threshold: 255 if value >= threshold else 0)
+        for edge, threshold in zip(edges, thresholds)
+    )
+    short_edge = min(original_rgb.size)
+    inner_radius = max(2, min(4, round(short_edge * 0.002)))
+    outer_radius = max(3, min(6, round(short_edge * 0.004)))
+    core = alpha.filter(ImageFilter.MinFilter(_binary_kernel(inner_radius)))
+    expanded = alpha.filter(ImageFilter.MaxFilter(_binary_kernel(outer_radius)))
+    band = ImageChops.subtract(expanded, core)
+    recovered_core = core.filter(ImageFilter.MaxFilter(_binary_kernel(inner_radius)))
+    thin_structure = ImageChops.subtract(alpha, recovered_core)
+    band_pixels = _count_nonzero(band)
+    supported = tuple(
+        _count_nonzero(ImageChops.multiply(seed, band)) for seed in seeds
+    )
+    consensus = Image.new("L", original_rgb.size, 0)
+    consensus_pixels = consensus.load()
+    seed_pixels = tuple(seed.load() for seed in seeds)
+    for y in range(original_rgb.height):
+        for x in range(original_rgb.width):
+            if sum(bool(seed[x, y]) for seed in seed_pixels) >= 2:
+                consensus_pixels[x, y] = 255
+
+    consensus_band_pixels = _count_nonzero(ImageChops.multiply(consensus, band))
+    if band_pixels == 0 or consensus_band_pixels == 0:
+        refined = alpha.copy()
+        status = "fallback"
+        fallback = "insufficient_cross_variant_edge_evidence"
+    else:
+        proposed = ImageChops.lighter(core, thin_structure)
+        proposed = ImageChops.lighter(
+            proposed, ImageChops.multiply(expanded, consensus)
+        )
+        proposed = Image.composite(alpha, proposed, _border_mask(original_rgb.size))
+        changed = ImageChops.difference(proposed, alpha)
+        if _count_nonzero(changed) > max(1, round(band_pixels * 0.95)):
+            refined = alpha.copy()
+            status = "fallback"
+            fallback = "insufficient_cross_variant_edge_evidence"
+        else:
+            refined = proposed.point(lambda value: 255 if value else 0)
+            status = "applied"
+            fallback = None
+
+    outside_band = ImageOps.invert(band)
+    changed_pixels = _count_nonzero(ImageChops.difference(refined, alpha))
+    names = ("original_rgb", "global_robust", "local_limited")
+    variants = tuple(
+        BoundaryVariantReport(
+            name=name,
+            black_point=threshold,
+            white_point=255,
+            clipped_ratio=round(_count_nonzero(seed) / max(1, seed.width * seed.height), 6),
+            supported_edge_pixels=count,
+        )
+        for name, threshold, seed, count in zip(names, thresholds, seeds, supported)
+    )
+    return refined, BoundaryRefinementReport(
+        status=status,
+        fallback_reason=fallback,
+        changed_pixels=changed_pixels,
+        band_pixels=band_pixels,
+        consensus_band_pixels=consensus_band_pixels,
+        invariant_core_preserved=(
+            ImageChops.difference(ImageChops.multiply(refined, core), core).getbbox()
+            is None
+        ),
+        invariant_outside_band=(
+            ImageChops.multiply(
+                ImageChops.difference(refined, alpha), outside_band
+            ).getbbox()
+            is None
+        ),
+        invariant_border_frozen=(
+            ImageChops.multiply(
+                ImageChops.difference(refined, alpha),
+                _border_mask(original_rgb.size),
+            ).getbbox()
+            is None
+        ),
+        variants=variants,
+        algorithm_version="boundary-refinement-2.1",
     )
 
 
@@ -688,7 +817,7 @@ def create_background_edit_assets_legacy_read_only(
     _validate_asset_paths(input_path, outputs)
     image, profile, digest = _identity_checked_profile(input_path, Path(geometry_profile_path), product_id)
     candidate = rasterize_vision_geometry(profile, image.size)
-    alpha, refinement = refine_candidate_boundary(image, candidate)
+    alpha, refinement = refine_candidate_boundary_legacy_read_only(image, candidate)
     mask = Image.new("RGBA", image.size, (255, 255, 255, 0))
     mask.putalpha(alpha)
     image_bytes = _png_bytes(image)
@@ -930,6 +1059,70 @@ def _validate_cropped_inputs(
     )
 
 
+def _draw_crop_pixel_primitive(
+    draw: ImageDraw.ImageDraw,
+    primitive: dict[str, Any],
+) -> None:
+    kind = primitive["type"]
+    if kind == "polygon":
+        draw.polygon(primitive["points"], fill=255)
+    elif kind == "polyline":
+        draw.line(
+            primitive["points"],
+            fill=255,
+            width=primitive["width"],
+            joint="curve",
+        )
+    elif kind == "ellipse":
+        center_x, center_y, radius_x, radius_y = primitive["params"]
+        draw.ellipse(
+            (
+                center_x - radius_x,
+                center_y - radius_y,
+                center_x + radius_x,
+                center_y + radius_y,
+            ),
+            fill=255,
+        )
+    else:
+        for item in primitive["items"]:
+            center_x, center_y, radius_x, radius_y = item["params"]
+            draw.ellipse(
+                (
+                    center_x - radius_x,
+                    center_y - radius_y,
+                    center_x + radius_x,
+                    center_y + radius_y,
+                ),
+                fill=255,
+            )
+
+
+def _cropped_border_gate(
+    alpha: Image.Image,
+    cropped_geometry: dict[str, Any],
+) -> tuple[float, tuple[str, ...]]:
+    border = _border_mask(alpha.size)
+    final_contact = ImageChops.multiply(alpha, border)
+    declared_contact = Image.new("L", alpha.size, 0)
+    missing: list[str] = []
+    for primitive in cropped_geometry["primitives"]:
+        if primitive.get("touches_border") is not True:
+            continue
+        primitive_alpha = Image.new("L", alpha.size, 0)
+        _draw_crop_pixel_primitive(ImageDraw.Draw(primitive_alpha), primitive)
+        primitive_contact = ImageChops.multiply(primitive_alpha, border)
+        if primitive_contact.getbbox() is None:
+            missing.append(primitive["id"])
+        declared_contact = ImageChops.lighter(declared_contact, primitive_contact)
+    undeclared = ImageChops.subtract(final_contact, declared_contact)
+    ratio = round(
+        _count_nonzero(undeclared) / max(1, _count_nonzero(border)),
+        6,
+    )
+    return ratio, tuple(missing)
+
+
 def create_background_edit_assets(
     cropped_original_path: str | Path,
     cropped_detection_path: str | Path,
@@ -938,7 +1131,7 @@ def create_background_edit_assets(
     cropped_geometry_path: str | Path,
     crop_manifest_path: str | Path,
     outputs: MaskOutputPaths,
-) -> MaskAssessment:
+) -> DraftMaskAssessment:
     paths = tuple(
         Path(path)
         for path in (
@@ -953,7 +1146,12 @@ def create_background_edit_assets(
     original, detection, local_detection, candidate, cropped_geometry, manifest = (
         _validate_cropped_inputs(*paths, outputs)
     )
-    alpha, refinement = refine_candidate_boundary(original, candidate)
+    alpha, refinement = refine_candidate_boundary(
+        original,
+        detection,
+        local_detection,
+        candidate,
+    )
     mask = Image.new("RGBA", original.size, (255, 255, 255, 0))
     mask.putalpha(alpha)
     mask_bytes = _png_bytes(mask)
@@ -963,24 +1161,39 @@ def create_background_edit_assets(
     )
     overlay_bytes = _png_bytes(Image.composite(red_tint, original, editable))
     protected_ratio, border_contact_ratio = _mask_metrics(alpha)
-    reasons = ["mask_review_required"]
+    undeclared_border_ratio, missing_border_ids = _cropped_border_gate(
+        alpha, cropped_geometry
+    )
+    technical_blockers: list[str] = []
     if refinement.status == "fallback":
-        reasons.insert(0, "boundary_refinement_fallback")
+        technical_blockers.append("boundary_refinement_fallback")
+    if not (
+        refinement.invariant_core_preserved
+        and refinement.invariant_outside_band
+        and refinement.invariant_border_frozen
+    ):
+        technical_blockers.append("boundary_refinement_invariant_failed")
     if not _MIN_PROTECTED_RATIO <= protected_ratio <= _MAX_PROTECTED_RATIO:
-        reasons.insert(0, "protected_ratio_out_of_range")
-    assessment = MaskAssessment(
-        status="review",
+        technical_blockers.append("protected_ratio_out_of_range")
+    if undeclared_border_ratio > 0:
+        technical_blockers.append("undeclared_border_contact")
+    if missing_border_ids:
+        technical_blockers.append("declared_border_contact_missing")
+    reasons = [*technical_blockers]
+    if not technical_blockers:
+        reasons.append("mask_review_required")
+    assessment = DraftMaskAssessment(
+        status="fail" if technical_blockers else "review",
         reasons=reasons,
         protected_ratio=protected_ratio,
         background_editable_ratio=round(1 - protected_ratio, 6),
         border_contact_ratio=border_contact_ratio,
-        undeclared_border_contact_ratio=0.0,
-        automatic_wawapi_edit_allowed=False,
-        mask_review_status="required",
+        undeclared_border_contact_ratio=undeclared_border_ratio,
         unresolved_uncertain_region_ids=tuple(
             item["id"] for item in cropped_geometry.get("uncertain_regions", [])
         ),
-        declared_border_contact_missing_ids=(),
+        declared_border_contact_missing_ids=missing_border_ids,
+        technical_blockers=tuple(technical_blockers),
     )
     report = {
         **asdict(assessment),
@@ -1024,7 +1237,7 @@ def create_mask(
     _validate_asset_paths(input_path, (output_path,))
     image, profile, _digest = _identity_checked_profile(input_path, Path(geometry_profile_path), product_id)
     candidate = rasterize_vision_geometry(profile, image.size)
-    alpha, refinement = refine_candidate_boundary(image, candidate)
+    alpha, refinement = refine_candidate_boundary_legacy_read_only(image, candidate)
     mask = Image.new("RGBA", image.size, (255, 255, 255, 0))
     mask.putalpha(alpha)
     mask_bytes = _png_bytes(mask)
@@ -1080,6 +1293,7 @@ __all__ = [
     "VisionGeometryProfile",
     "BoundaryVariantReport",
     "BoundaryRefinementReport",
+    "DraftMaskAssessment",
     "MaskAssessment",
     "MaskOutputPaths",
     "ASSESSMENT_EXIT_CODES",
@@ -1087,6 +1301,7 @@ __all__ = [
     "load_vision_geometry",
     "rasterize_vision_geometry",
     "refine_candidate_boundary",
+    "refine_candidate_boundary_legacy_read_only",
     "create_background_edit_assets",
     "create_background_edit_assets_legacy_read_only",
     "create_mask",
