@@ -25,6 +25,8 @@ description: 在需要为手串、吊坠、项链、链绳及其他珠宝制作�
 
 使用 `scripts/run_white_background_workflow.py create` 创建 `<output_root>/<product-id>/<run-id>/`。运行身份写入 `manifests/workflow_state.json`，运行锁为 `manifests/workflow.lock`。目录和业务资产禁止覆盖或复用。
 
+Windows 安全路径上限为 `240` 个字符；创建运行时必须为最深临时输出预留 `64` 个字符。正式身份仍使用完整值，不得缩短 `run_id`、`delivery_id`、商品编号或正式交付文件名。Wawapi 临时目录固定为 `tmp/e-<8位随机十六进制>`，该短随机别名不进入 Manifest、确认回执或交付身份。文档和调用方应优先提供简短的 `output_root`，但不得绑定固定盘符。
+
 源图规范化为 RGB PNG；`source_sha256` 表示规范化 PNG 摘要，原始附件字节摘要单独记录为 `raw_source_sha256`。
 
 ## 2. 检测增强
@@ -67,6 +69,8 @@ Mask 的 RGB 固定为 255；`alpha=255` 表示产品保护，`alpha=0` 表示�
 ## 6. Wawapi
 
 确认有效后，由 `scripts/run_wawapi_edit_with_retry.py` 调用无内部重试的 single-attempt adapter。每个运行最多 3 个 call slot；明确 429 只有在响应不含 task/job ID 或可用成功结果、两者均不存在时才可重试。5xx 只有在不含 task/job ID 且带正式 `request_not_accepted` 证据时才可重试；下一 slot 分别等待 30 秒、90 秒。
+
+运行根目录或精确临时输出超过 Windows 路径预算时，必须在 Wawapi claim 和真实 POST 前终止，真实调用次数保持为 `0`，并提示改用更短的 `output_root`。不得等远端返回图片后再依赖本地写盘错误判断是否重提。
 
 普通 5xx、超时、断连、远端 ID、遗留不明 claim 或无法证明请求未被接受的情况进入 `edit_unknown`，禁止自动再请求。
 

@@ -114,6 +114,12 @@ class SkillContractTests(unittest.TestCase):
         ]:
             self.assertIn(required, self.skill)
 
+    def test_storage_path_contract_is_short_and_fail_fast(self) -> None:
+        self.assertIn("Windows 安全路径上限为 `240`", self.skill)
+        self.assertIn("`tmp/e-<8位随机十六进制>`", self.skill)
+        self.assertIn("不得缩短 `run_id`、`delivery_id`", self.skill)
+        self.assertIn("必须在 Wawapi claim 和真实 POST 前终止", self.skill)
+
     def test_prompt_source_and_input_isolation_remain_authoritative(self) -> None:
         for required in [
             "references/white-background-prompt.md",
