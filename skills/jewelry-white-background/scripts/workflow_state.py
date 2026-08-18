@@ -22,6 +22,9 @@ WINDOWS_DEVICE_PATTERN = re.compile(
 OWNER_ID_PATTERN = re.compile(r"[0-9a-f]{32}\Z")
 CLAIM_LEASE_SECONDS = 30
 IN_FLIGHT_CLAIM_STATUSES = {"submitting", "watermarking", "uploading"}
+WINDOWS_SAFE_PATH_LIMIT = 240
+RUN_DESCENDANT_RESERVE = 64
+IS_WINDOWS = os.name == "nt"
 
 TERMINAL_STATES = {
     "source_failed",
@@ -200,6 +203,23 @@ def _run_id(now: datetime, run_uuid_hex: str) -> str:
     return f"{utc_value:%Y%m%dT%H%M%S}{milliseconds:03d}Z-{run_uuid_hex}"
 
 
+def _validate_run_path_budget(
+    final_root: Path, *, windows: bool | None = None
+) -> None:
+    is_windows = IS_WINDOWS if windows is None else windows
+    if not is_windows:
+        return
+    resolved_length = len(os.path.abspath(os.fspath(final_root)))
+    required_length = resolved_length + RUN_DESCENDANT_RESERVE
+    if required_length > WINDOWS_SAFE_PATH_LIMIT:
+        raise ValueError(
+            "Windows 路径预算不足："
+            f"运行根目录 {resolved_length} 字符，"
+            f"预留后代路径后为 {required_length}，"
+            f"上限为 {WINDOWS_SAFE_PATH_LIMIT}；请使用更短的 output_root"
+        )
+
+
 def _json_bytes(payload: Mapping[str, Any]) -> bytes:
     return (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
 
@@ -335,6 +355,7 @@ def create_run(
     product_root = output_root / identity.product_id
     final_root = product_root / run_id
     staging_root = product_root / f".{run_id}.creating-{owner_id}"
+    _validate_run_path_budget(final_root)
     paths = RunPaths.from_root(final_root)
 
     _filesystem_path(product_root).mkdir(parents=True, exist_ok=True)

@@ -119,6 +119,38 @@ def test_create_run_rejects_unsafe_product_ids_before_creating_directories(
     assert not tmp_path.exists() or list(tmp_path.iterdir()) == []
 
 
+def test_create_run_rejects_windows_root_without_descendant_budget(
+    tmp_path: Path, monkeypatch
+) -> None:
+    module = load_module()
+    monkeypatch.setattr(module, "IS_WINDOWS", True, raising=False)
+    output_root = tmp_path / ("long-root-" + "x" * 180)
+
+    with pytest.raises(ValueError, match="Windows 路径预算"):
+        module.create_run(
+            output_root,
+            identity(module),
+            now=lambda: FIXED_NOW,
+            uuid_factory=uuid_sequence(RUN_UUID, OWNER_UUID),
+        )
+
+    assert not output_root.exists()
+
+
+def test_run_path_budget_accepts_exact_windows_limit() -> None:
+    module = load_module()
+    final_root = Path("C:/") / ("x" * 173)
+
+    assert len(str(final_root)) + module.RUN_DESCENDANT_RESERVE == 240
+    module._validate_run_path_budget(final_root, windows=True)
+
+
+def test_run_path_budget_is_not_applied_off_windows() -> None:
+    module = load_module()
+
+    module._validate_run_path_budget(Path("C:/") / ("x" * 300), windows=False)
+
+
 def test_create_run_never_overwrites_an_existing_run(tmp_path: Path) -> None:
     module = load_module()
     first = create_run(module, tmp_path)
