@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -237,6 +238,50 @@ def test_default_edit_revalidates_mask_confirmation_before_request(
     result = module.WhiteBackgroundWorkflow().resume(paths.root)
 
     assert result.status == "edit_failed"
+
+
+def test_default_layout_stage_creates_layout_directory_before_call(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state, paths = create_paths(tmp_path)
+    advance(
+        state,
+        paths,
+        [
+            "source_ready",
+            "detection_image_ready",
+            "geometry_ready",
+            "crop_ready",
+            "mask_ready",
+            "awaiting_mask_confirmation",
+            "mask_confirmed",
+            "edit_attempt_1",
+            "edit_completed",
+        ],
+    )
+    edit_path = paths.root / "edit" / "SY1537_generated.png"
+    edit_path.parent.mkdir(parents=True)
+    Image.new("RGB", (32, 32), "white").save(edit_path, "PNG")
+    (paths.manifests_dir / "SY1537_edit_result.json").write_text(
+        json.dumps({"result": {"path": "edit/SY1537_generated.png"}}),
+        encoding="utf-8",
+    )
+    module = load_path("workflow_orchestrator_layout_directory", WORKFLOW_SCRIPT)
+    module_paths = module._state.RunPaths.from_root(paths.root)
+    layout_dir = paths.root / "layout"
+    assert not layout_dir.exists()
+
+    def fake_layout(input_path, output_path, manifest_path):
+        assert input_path == edit_path
+        assert layout_dir.is_dir()
+        Image.new("RGB", (1536, 2048), "white").save(output_path, "PNG")
+        manifest_path.write_text("{}\n", encoding="utf-8")
+
+    monkeypatch.setattr(module._layout, "layout_generated_result", fake_layout)
+
+    module.DefaultWorkflowDependencies()._create_layout(module_paths)
+
+    assert module._state.load_state(module_paths.state_path)["status"] == "layout_completed"
 
 
 def test_formal_asset_paths_match_specification() -> None:

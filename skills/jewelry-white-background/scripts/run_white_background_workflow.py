@@ -300,6 +300,7 @@ class DefaultWorkflowDependencies:
 
     def _create_layout(self, paths) -> None:
         root = paths.root
+        (root / "layout").mkdir(parents=True, exist_ok=True)
         manifest = _read_json(root / "manifests" / f"{paths.product_id}_edit_result.json")
         generated = root / manifest["result"]["path"]
         _layout.layout_generated_result(
