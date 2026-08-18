@@ -27,6 +27,9 @@ DEFAULT_HELPER = (
 MAX_IMAGE_PIXELS = 20_000_000
 DEFAULT_WAWAPI_BASE_URL = "https://wawapii.com"
 DEFAULT_WAWAPI_MODEL = "gpt-image-2"
+WINDOWS_SAFE_PATH_LIMIT = 240
+WAWAPI_HELPER_FILENAME_PROBE = "image-20991231-235959-ffffffff-9999.jpeg"
+IS_WINDOWS = os.name == "nt"
 
 
 @dataclass(frozen=True)
@@ -301,6 +304,7 @@ def build_background_edit_request_identity(
     image_size, mask_size = _validate_background_edit_inputs(
         Path(request.image), Path(request.mask)
     )
+    _validate_helper_output_path_budget(Path(request.output_path))
     base_url = request.base_url.strip().rstrip("/")
     if not base_url:
         raise ValueError("Wawapi base_url 不能为空")
@@ -436,7 +440,37 @@ def _temporary_edit_output_dir(output_path: Path) -> Path:
         if output_path.parent.name.lower() == "edit"
         else output_path.parent
     )
-    return run_root / "tmp" / f"wawapi-edit-{uuid.uuid4().hex}"
+    return run_root / "tmp" / f"e-{uuid.uuid4().hex[:8]}"
+
+
+def _helper_output_path_probe(output_path: Path) -> Path:
+    run_root = (
+        output_path.parent.parent
+        if output_path.parent.name.lower() == "edit"
+        else output_path.parent
+    )
+    return (
+        run_root
+        / "tmp"
+        / "e-ffffffff"
+        / WAWAPI_HELPER_FILENAME_PROBE
+    ).resolve(strict=False)
+
+
+def _validate_helper_output_path_budget(
+    output_path: Path, *, windows: bool | None = None
+) -> None:
+    is_windows = IS_WINDOWS if windows is None else windows
+    if not is_windows:
+        return
+    probe = _helper_output_path_probe(output_path)
+    path_length = len(str(probe))
+    if path_length > WINDOWS_SAFE_PATH_LIMIT:
+        raise ValueError(
+            "Wawapi 临时输出路径超过 Windows 安全预算："
+            f"{path_length} > {WINDOWS_SAFE_PATH_LIMIT}；"
+            "请使用更短的 output_root"
+        )
 
 
 def _cleanup_temporary_output_dir(path: Path) -> None:

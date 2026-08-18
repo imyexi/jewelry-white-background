@@ -3,7 +3,9 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import uuid
 from pathlib import Path
+from unittest import mock
 
 from PIL import Image
 
@@ -224,6 +226,69 @@ class YuanImageGenerationAdapterTests(unittest.TestCase):
         self.assertNotIn("--aspect-ratio", command)
         self.assertNotIn("--resolution", command)
         self.assertNotIn("generation", command)
+
+    def test_background_edit_temp_directory_uses_short_alias(self):
+        module = self.require_adapter()
+        output = Path("run/edit/SY1537_generated.png")
+
+        with mock.patch.object(
+            module.uuid,
+            "uuid4",
+            return_value=uuid.UUID("12345678-1234-5678-1234-567812345678"),
+        ):
+            temporary = module._temporary_edit_output_dir(output)
+
+        self.assertEqual(temporary, Path("run/tmp/e-12345678"))
+
+    def test_background_edit_temp_path_fits_windows_budget(self):
+        module = self.require_adapter()
+        output = Path(
+            "C:/Users/Administrator/Documents/珠宝白底图生成/outputs/"
+            "jewelry-white-background/formal-regenerate-sy1537-20260817-v3/"
+            "runs/SY1537/20260817T152127152Z-55d3c4076050498aa721d76116e74e90/"
+            "edit/SY1537_generated.png"
+        )
+
+        with mock.patch.object(
+            module.uuid,
+            "uuid4",
+            return_value=uuid.UUID("12345678-1234-5678-1234-567812345678"),
+        ):
+            probe = module._temporary_edit_output_dir(output) / (
+                "image-20991231-235959-ffffffff-9999.jpeg"
+            )
+
+        self.assertLessEqual(len(str(probe)), 240)
+
+    def test_overlong_helper_path_fails_before_transport(self):
+        module = self.require_adapter()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            image_path = root / "front.png"
+            mask_path = root / "mask.png"
+            Image.new("RGB", (37, 53), "white").save(image_path, "PNG")
+            Image.new("RGBA", (37, 53), (255, 255, 255, 0)).save(
+                mask_path, "PNG"
+            )
+            request = module.BackgroundEditRequest(
+                prompt="只替换透明背景\n",
+                image=image_path,
+                mask=mask_path,
+                output_path=root / ("x" * 220) / "edit/result.png",
+                base_url="https://example.test",
+                model="gpt-image-2",
+            )
+            transport = mock.Mock(
+                side_effect=AssertionError("不得调用真实 transport")
+            )
+
+            with mock.patch.object(module, "IS_WINDOWS", True, create=True):
+                with self.assertRaisesRegex(ValueError, "临时输出路径"):
+                    module.edit_background_single_attempt(
+                        request, transport=transport
+                    )
+
+            transport.assert_not_called()
 
     def test_edit_background_copies_first_output_and_reuses_utf8_environment(self):
         module = self.require_adapter()
